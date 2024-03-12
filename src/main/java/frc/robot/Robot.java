@@ -42,6 +42,39 @@ public class Robot extends TimedRobot {
   private final Joystick driverJoystick = new Joystick(0);
   private final Joystick driverJoystick2 = new Joystick(2);
 
+  // Control Values
+
+  private double strafeControllerVal;
+  private double driveControllerVal;
+  private double rotateControllerVal;
+
+  private boolean toggleInputControll;
+  private boolean shootControl;
+  private boolean winchForwardControl;
+  private boolean winchBackwardControl;
+  private boolean toggleAutoAimControl;
+  private boolean raiseClawsControl;
+  
+  private int operatorDPad;
+  private boolean raiseShooterControl;
+  private boolean lowerShooterControl;
+  
+  private double swerveSpinSpeedModifier;
+
+  private void updateControlValues() {
+    // Set control variables with this function and call it at the top of teleop periodic
+    if (JOYSTICK_CONTROL) {
+      swerveSpinSpeedModifier = driverJoystick2.getRawButton(2) ? .25 : 1;
+    } else {
+      swerveSpinSpeedModifier = m_driverController.getXButton() ? .25 : 1;
+    }
+
+    toggleInputControl = m_opperateController.getAButtonPressed();
+
+    winchBackwardsControl = m_opperateController.getBackButton();
+    winchForwardsControl = m_opperateController.getRightBumper();
+  }
+
   // Sensors
 
   private final AHRS gyro = new AHRS();
@@ -398,6 +431,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     final PositionVoltage m_request = new PositionVoltage(0).withSlot(0);
+    updateControlValues();
     
     if (detectedAprilTagId == speakerId) {
       // y = y > 30 ? y : y - 3;
@@ -413,12 +447,7 @@ public class Robot extends TimedRobot {
       targetShooterRPM = MathUtil.clamp(targetShooterRPM, -4700, -2600);
     }
 
-    double swerveSpinSpeedModifier;
-    if (JOYSTICK_CONTROL) {
-      swerveSpinSpeedModifier = driverJoystick2.getRawButton(2) ? .25 : 1;
-    } else {
-      swerveSpinSpeedModifier = m_driverController.getXButton() ? .25 : 1;
-    }
+    
 
     if (JOYSTICK_CONTROL) {
       swervedrive.drive(driverJoystick.getX() > -.075 && driverJoystick.getX() < .075 ? 0 : driverJoystick.getX() , -driverJoystick.getY() > -.05 && -driverJoystick.getY() < .05 ? 0 : -driverJoystick.getY(), driverJoystick2.getX() > -.05 && driverJoystick2.getX() < .05 ? 0 : (driverJoystick2.getX() * .5) * swerveSpinSpeedModifier, driverJoystick.getRawButton(2));
@@ -444,7 +473,7 @@ public class Robot extends TimedRobot {
       }
     } else if (hasNote) {
       shouldRunIntake = false;
-    } else if (m_opperateController.getAButtonPressed()) {
+    } else if (toggleInputControl) {
       shouldRunIntake = !shouldRunIntake;
     };
     
@@ -455,13 +484,17 @@ public class Robot extends TimedRobot {
       intakeSpeed = shouldRunIntake ? -1 : 0;
     }
 
-    if (m_opperateController.getBackButton()) {
+    if (winchBackwardsControl) {
       winchSpeed = -1;
-    } else if (m_opperateController.getRightBumper()) {
+    } else if (winchForwardsControl) {
       winchSpeed = 1;
     } else {
       winchSpeed = 0;
     }
+
+    // TODO should this get moved up to the intake code as well? or possibly be its own y button press?
+    // maybe something like if (buttonPressed && shooterSetSpeed == 0) -> shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
+    // and then set shooterSetSpeed = 0 when we fire the note
     
     if (m_opperateController.getYButton()) {
       shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
