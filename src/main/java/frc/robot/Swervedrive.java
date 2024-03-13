@@ -14,6 +14,13 @@ public class Swervedrive {
 
   final XboxController m_driverController = new XboxController(0);
 
+  double frontLeftOutputSpeed = 0;
+  double frontRightOutputSpeed = 0;
+  double backLeftOutputSpeed = 0;
+  double backRightOutputSpeed = 0;
+
+  double normalSpeed = 0;
+
   public Swervedrive (WheelDrive backRight, WheelDrive backLeft, WheelDrive frontRight, WheelDrive frontLeft, AHRS gyro){
     this.backRight = backRight;
     this.backLeft = backLeft;
@@ -107,25 +114,30 @@ public class Swervedrive {
         yaw = isRobotCentric ? yaw * 0: yaw;
         SmartDashboard.putNumber("modified yaw", yaw);
         SmartDashboard.putBoolean("isRobotCentric", isRobotCentric);
-        if(rX == 0){
-            frontLeft.SetDirection(angle-yaw, -speed);
-            frontRight.SetDirection(angle-yaw, speed);
-            backLeft.SetDirection(angle-yaw, speed);
-            backRight.SetDirection(angle-yaw, speed);
-        } else if (speed == 0){
-          // Opposite diagonal axle distance = 33.2 inches
-          frontLeft.SetDirection(42.5, -rX); //42.5 degrees
-          frontRight.SetDirection(137.5, rX);  // 137.5 degrees
-          backLeft.SetDirection(317.5, rX);  // 317.5 degrees
-          backRight.SetDirection(222.5, rX); // 222.5 degrees
-        }
-        // else{
-        //   frontLeft.turnAndDrive(angle-yaw, -speed, -rX, 315);
-        //   frontRight.turnAndDrive(angle-yaw, speed, rX, 45);
-        //   backLeft.turnAndDrive(angle-yaw, speed, rX, 135);
-        //   backRight.turnAndDrive(angle-yaw, speed, rX, 225);
+        // if(rX == 0){
+        //     frontLeft.SetDirection(angle-yaw, -speed);
+        //     frontRight.SetDirection(angle-yaw, speed);
+        //     backLeft.SetDirection(angle-yaw, speed);
+        //     backRight.SetDirection(angle-yaw, speed);
+        // } else if (speed == 0){
+        //   // Opposite diagonal axle distance = 33.2 inches
+        //   frontLeft.SetDirection(42.5, -rX); //42.5 degrees
+        //   frontRight.SetDirection(137.5, rX);  // 137.5 degrees
+        //   backLeft.SetDirection(317.5, rX);  // 317.5 degrees
+        //   backRight.SetDirection(222.5, rX); // 222.5 degrees
         // }
+
+        frontLeftOutputSpeed = frontLeft.turnAndDrive(angle-yaw, -speed, -rX, 315);
+        frontRightOutputSpeed = frontRight.turnAndDrive(angle-yaw, speed, rX, 45);
+        backLeftOutputSpeed = backLeft.turnAndDrive(angle-yaw, speed, rX, 135);
+        backRightOutputSpeed = backRight.turnAndDrive(angle-yaw, speed, rX, 225);
         
+        normalSpeed = Math.max(Math.max(frontLeftOutputSpeed, frontRightOutputSpeed), Math.max(backLeftOutputSpeed, backRightOutputSpeed));
+        
+        frontLeft.setWheelSpeed(normalSpeed, frontLeftOutputSpeed);
+        frontRight.setWheelSpeed(normalSpeed, frontRightOutputSpeed);
+        backLeft.setWheelSpeed(normalSpeed, backLeftOutputSpeed);
+        backRight.setWheelSpeed(normalSpeed, backRightOutputSpeed);
         
         SmartDashboard.putNumber("angle", angle);
         SmartDashboard.putNumber("Yaw", yaw);

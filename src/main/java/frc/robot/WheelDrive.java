@@ -19,11 +19,13 @@ import com.ctre.phoenix.sensors.CANCoder;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import com.revrobotics.SparkPIDController;
 // import edu.wpi.first.wpilibj.AnalogInput;
 // import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.Joystick;
 
 // import java.util.Timer;
 
@@ -36,7 +38,10 @@ public class WheelDrive {
     private PIDController anglePID;
     private SparkPIDController speedPID;
     private CANCoder encoder;
-    XboxController xControl = new XboxController(0);
+    // XboxController xControl = new XboxController(0);
+    Joystick joystick1 = new Joystick(0);
+    Joystick joystick2 = new Joystick(2);
+    double outputSpeed = 0;
     
     
     
@@ -93,13 +98,13 @@ public class WheelDrive {
         double pidOutput = anglePID.calculate(currentAngle, setAngle);
         pidOutput *= 0.45;
         
-        if((setAngle == 0)&&(xControl.getLeftY() < 0))
+        // if((setAngle == 0)&&(xControl.getLeftY() < 0))
         
-        {
+        // {
 
-            setAngle = currentAngle;
+        //     setAngle = currentAngle;
 
-        }
+        // }
 
 
 
@@ -138,68 +143,84 @@ public class WheelDrive {
     }
     
     
-    public void turnAndDrive(double setAngle, double speed, double turn, double wheelAngle) {
-        double turnPower = turn * -45;
+    public double turnAndDrive(double strafeAngle, double strafeSpeed, double turnSpeed, double turnAngle) {
         
+        strafeAngle *= Math.PI/180;
+        turnAngle *= Math.PI/180;
 
-        if (MathHelp.isEqualApprox(setAngle, wheelAngle, 90)) 
-        {
-            setAngle += turnPower;
-        } 
-        else
-        {
-            setAngle -= turnPower;
-        }
+        double x1 = Math.cos(strafeAngle) * strafeSpeed;
+        double y1 = Math.sin(strafeAngle) * strafeSpeed;
 
-        SmartDashboard.putNumber("turnPower", turnPower);
-        SmartDashboard.putNumber("turn and drive Angle", setAngle);
+        double x2 = Math.cos(turnAngle) * turnSpeed;
+        double y2 = Math.sin(turnAngle) * turnSpeed;
+
+        double x3 = x1 + x2;
+        double y3 = y1 + y2;
 
 
+        double setAngle = Math.atan2(x3, y3);
+        setAngle *= 180/Math.PI;
         double currentAngle = -(this.encoder.getAbsolutePosition());
-        
-        // setAngle = MathHelp.pickCloserAngleDeg(currentAngle, setAngle, setAngle-180);
+
+        double speed = Math.hypot(x3, y3);
+
+
+        double wheelAngle = currentAngle - setAngle;
+        wheelAngle = Math.abs(wheelAngle);
 
         double currentAngleRadian = currentAngle * (Math.PI / 180);
-        double setAngleRadians = setAngle * (Math.PI / 180);
-        double oppositeSetAngleRadians = (setAngle - 180) * (Math.PI / 180);
+        double setAngleRadians = setAngle;
+        double oppositeSetAngleRadians = setAngle - Math.PI;
 
-        // if (reverse){
-        //     setAngle -= 180;
-        // }
+        
 
         if (Math.abs(MathHelp.differenceBetweenAngles(currentAngleRadian, oppositeSetAngleRadians)) < Math.abs(MathHelp.differenceBetweenAngles(currentAngleRadian, setAngleRadians)))
         {
         //   return Bngle;
             setAngle -= 180;
             reverse = !reverse;
-            speed *= -1;
+            strafeSpeed *= -1;
         }
 
         if (reverse){
         }
+
+        if (!(wheelAngle <= 180)) {
+            speed = -speed;
+        }
+        
+        
+        // if((setAngle == 0)&&(xControl.getLeftY() < 0)) { setAngle = currentAngle;}
+        
+        
+        
         
         double pidOutput = anglePID.calculate(currentAngle, setAngle);
         pidOutput *= 0.45;
         
-        if((setAngle == 0)&&(xControl.getLeftY() < 0))
+        this.angleMotor.set(pidOutput);
         
+
+        double distanceFromSetAngle = Math.abs(MathHelp.differenceBetweenAngles(currentAngle, setAngle));
+        double speedScalar = MathHelp.map(distanceFromSetAngle, 0, 90, 1, 0);
+
+        MathUtil.clamp(speedScalar, 0, 1);
+        
+        outputSpeed = speed * speedScalar;
+
+        return outputSpeed;
+    }
+
+    public void setWheelSpeed(double normalizedSpeed, double setSpeed) {
+        if (Math.abs(joystick1.getX()) < 0.075 && Math.abs(joystick1.getY()) < 0.075 && Math.abs(joystick2.getX()) < 0.075)
         {
-
-            setAngle = currentAngle;
-
+            this.speedMotor.set(0);
         }
-
-
-
-
-
-
-        this.angleMotor.set((pidOutput));
+        else
+        {
+            this.speedMotor.set(setSpeed / normalizedSpeed);
+        }
         
-        // if(!MathHelp.isEqualApprox(currentAngle, setAngle, .1)){
-        //     speed = 0;
-        // }
-        this.speedMotor.set(speed);
     }
 
 }
