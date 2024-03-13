@@ -48,7 +48,7 @@ public class Robot extends TimedRobot {
   private double driveControllerVal;
   private double rotateControllerVal;
 
-  private boolean toggleInputControll;
+  private boolean toggleInputControl;
   private boolean shootControl;
   private boolean winchForwardControl;
   private boolean winchBackwardControl;
@@ -71,8 +71,8 @@ public class Robot extends TimedRobot {
 
     toggleInputControl = m_opperateController.getAButtonPressed();
 
-    winchBackwardsControl = m_opperateController.getBackButton();
-    winchForwardsControl = m_opperateController.getRightBumper();
+    winchBackwardControl = m_opperateController.getBackButton();
+    winchForwardControl = m_opperateController.getRightBumper();
   }
 
   // Sensors
@@ -484,9 +484,9 @@ public class Robot extends TimedRobot {
       intakeSpeed = shouldRunIntake ? -1 : 0;
     }
 
-    if (winchBackwardsControl) {
+    if (winchBackwardControl) {
       winchSpeed = -1;
-    } else if (winchForwardsControl) {
+    } else if (winchForwardControl) {
       winchSpeed = 1;
     } else {
       winchSpeed = 0;
