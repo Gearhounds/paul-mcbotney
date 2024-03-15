@@ -13,6 +13,7 @@ public final class Constants {
     // By using this file, we can change them all at once if we need to tune the robot in anyway.
 
     public static final int TEAM_NUMBER = 5674;
+    public static final double SHOOT_TIMEOUT = 2; // sec
 
     // add more constants as needed
 }

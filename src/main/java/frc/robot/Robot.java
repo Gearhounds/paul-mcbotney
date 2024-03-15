@@ -73,6 +73,8 @@ public class Robot extends TimedRobot {
 
     winchBackwardControl = m_opperateController.getBackButton();
     winchForwardControl = m_opperateController.getRightBumper();
+
+    shootControl = m_opperateController.getYButton();
   }
 
   // Sensors
@@ -463,19 +465,39 @@ public class Robot extends TimedRobot {
     // if you press y, rev up shooter until target OR .25 sec (whichever is first) then run the intake to trigger a shot
 
     // NOTE this doesn't allow you to spit notes out without delay, do we need that for feeding?
-  
-    if (hasNote && (m_opperateController.getYButtonPressed() || shooterTimer.get() > 0)) {
+
+    
+    
+    
+    // shooter is running and we have no note, we just shot or we aborted a shot
+    if ((shooterTimer.get() > 0 && !hasNote) || !shootControl) {
+      shooterTimer.stop();
+      shooterTimer.reset();
+    }
+    
+    if (hasNote && shootControl) {
+      // we are loaded and trying to shoot
       shooterTimer.start();
-      if (currentShooterRPM >= targetShooterRPM || shooterTimer.hasElapsed(.25)) {
+      if (currentShooterRPM >= targetShooterRPM || shooterTimer.hasElapsed(Constants.SHOOT_TIMEOUT)) {
         shouldRunIntake = true;
-        shooterTimer.stop();
-        shooterTimer.reset();
       }
     } else if (hasNote) {
+      // we are loaded stop the intake
       shouldRunIntake = false;
     } else if (toggleInputControl) {
+      // manual toggle
       shouldRunIntake = !shouldRunIntake;
-    };
+    }
+
+    // TODO should this get moved up to the intake code as well? or possibly be its own y button press?
+    // maybe something like if (buttonPressed && shooterSetSpeed == 0) -> shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
+    // and then set shooterSetSpeed = 0 when we fire the note
+    
+    if (shootControl) {
+      shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
+    } else {
+      shooterSetSpeed = 0;
+    }
     
     if (m_opperateController.getPOV() == 90) {
       // override to backdrive intake
@@ -492,15 +514,7 @@ public class Robot extends TimedRobot {
       winchSpeed = 0;
     }
 
-    // TODO should this get moved up to the intake code as well? or possibly be its own y button press?
-    // maybe something like if (buttonPressed && shooterSetSpeed == 0) -> shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
-    // and then set shooterSetSpeed = 0 when we fire the note
-    
-    if (m_opperateController.getYButton()) {
-      shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
-    } else {
-      shooterSetSpeed = 0;
-    }
+
 
     armSpeed = 0;
     if (m_opperateController.getPOV() == 0) {
@@ -527,6 +541,7 @@ public class Robot extends TimedRobot {
       shooterArm.setControl(m_request.withPosition(shooterArmPosition));
     }
 
+    shooterSetSpeed *= -1;
     rightShooter.set(shooterSetSpeed);
     leftShooter.set(-shooterSetSpeed);
   }
