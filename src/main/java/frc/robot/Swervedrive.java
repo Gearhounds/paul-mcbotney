@@ -41,7 +41,7 @@ public class Swervedrive {
   public void drive(double lX, double lY, double rX, boolean isRobotCentric) {
       double speed = Math.sqrt((lX*lX) + (lY*lY));
 
-      double yaw = gyro.getYaw();
+      double yaw = gyro.getYaw() + 90;
 
       
       

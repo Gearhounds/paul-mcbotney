@@ -189,7 +189,7 @@ public class WheelDrive {
 
         double setAngle = Math.atan2(x3, y3);
         setAngle *= 180/Math.PI;
-        setAngle += 90;
+        
         double currentAngle = -(this.encoder.getAbsolutePosition());
 
         double speed = Math.hypot(x3, y3);
@@ -209,15 +209,12 @@ public class WheelDrive {
         //   return Bngle;
             setAngle -= 180;
             reverse = !reverse;
-            strafeSpeed *= -1;
+            this.speedMotor.setInverted(reverse);
         }
 
         if (reverse){
         }
 
-        if (!(wheelAngle <= 180)) {
-            speed = -speed;
-        }
         
         
         // if((setAngle == 0)&&(xControl.getLeftY() < 0)) { setAngle = currentAngle;}
