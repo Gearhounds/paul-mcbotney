@@ -38,18 +38,22 @@ public class WheelDrive {
     private PIDController anglePID;
     private SparkPIDController speedPID;
     private CANCoder encoder;
+    private double wheelAngle;
+    
+    
     // XboxController xControl = new XboxController(0);
     Joystick joystick1 = new Joystick(0);
     Joystick joystick2 = new Joystick(2);
     double outputSpeed = 0;
+    double distanceFromCenter = 18.42;
     
     
     
-    public WheelDrive(int angleMotor, int speedMotor, int encoderID) {
+    public WheelDrive(int angleMotor, int speedMotor, int encoderID, double wheelAngle) {
         this.angleMotor = new CANSparkMax(angleMotor, MotorType.kBrushless);
         this.speedMotor = new CANSparkMax(speedMotor, MotorType.kBrushless);
 
-        anglePID = new PIDController(.02, .001, 0);
+        anglePID = new PIDController(.01, .001, 0);
 
         speedPID = this.speedMotor.getPIDController();
         
@@ -57,6 +61,7 @@ public class WheelDrive {
 
         anglePID.enableContinuousInput(-180, 180);      
 
+        this.wheelAngle = wheelAngle;
     }
 
 
@@ -143,16 +148,40 @@ public class WheelDrive {
     }
     
     
-    public double turnAndDrive(double strafeAngle, double strafeSpeed, double turnSpeed, double turnAngle) {
+    public double turnAndDrive(double strafeAngle, double strafeSpeed, double turnSpeed, double yaw) {
+        // 27.5  24.5
+
+        // 13.75  12.25
+
+        // 18.42
+
+        // 49
+
+        wheelAngle *= Math.PI/180;
+
+        double wheelX = Math.cos(wheelAngle-yaw) * distanceFromCenter;
+        double wheelY = Math.sin(wheelAngle-yaw) * distanceFromCenter;
+
+        double turnPointX = 49 * turnSpeed;
+        double turnPointY = 0;
+
+        // double turnPointDis =  Math.hypot((turnPointX - wheelX), (turnPointY - wheelY));
+        double turnAngle = Math.atan2((turnPointY - wheelY), (turnPointX - wheelX)) - (Math.PI/2);
+        
         
         strafeAngle *= Math.PI/180;
-        turnAngle *= Math.PI/180;
+        
+
+         
 
         double x1 = Math.cos(strafeAngle) * strafeSpeed;
         double y1 = Math.sin(strafeAngle) * strafeSpeed;
 
         double x2 = Math.cos(turnAngle) * turnSpeed;
         double y2 = Math.sin(turnAngle) * turnSpeed;
+        
+        // double x2 = Math.cos(turnAngle) * turnSpeed;
+        // double y2 = Math.sin(turnAngle) * turnSpeed;
 
         double x3 = x1 + x2;
         double y3 = y1 + y2;
@@ -160,6 +189,7 @@ public class WheelDrive {
 
         double setAngle = Math.atan2(x3, y3);
         setAngle *= 180/Math.PI;
+        setAngle += 90;
         double currentAngle = -(this.encoder.getAbsolutePosition());
 
         double speed = Math.hypot(x3, y3);
@@ -169,7 +199,7 @@ public class WheelDrive {
         wheelAngle = Math.abs(wheelAngle);
 
         double currentAngleRadian = currentAngle * (Math.PI / 180);
-        double setAngleRadians = setAngle;
+        double setAngleRadians = setAngle * (Math.PI/180);
         double oppositeSetAngleRadians = setAngle - Math.PI;
 
         

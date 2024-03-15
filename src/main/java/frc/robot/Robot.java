@@ -51,10 +51,10 @@ public class Robot extends TimedRobot {
 
   // Drivetrain
 
-  private final WheelDrive backRight = new WheelDrive(5, 6, 11);
-  private final WheelDrive backLeft = new WheelDrive(7, 8, 10);
-  private final WheelDrive frontRight = new WheelDrive(3, 4, 12);
-  private final WheelDrive frontLeft = new WheelDrive(1, 2, 9);
+  private final WheelDrive backRight = new WheelDrive(5, 6, 11, 225);
+  private final WheelDrive backLeft = new WheelDrive(7, 8, 10, 315);
+  private final WheelDrive frontRight = new WheelDrive(3, 4, 12, 135);
+  private final WheelDrive frontLeft = new WheelDrive(1, 2, 9, 45);
   private final Swervedrive swervedrive = new Swervedrive(backRight, backLeft, frontRight, frontLeft, gyro);
   
   // Shooter
