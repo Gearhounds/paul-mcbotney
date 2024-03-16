@@ -51,6 +51,7 @@ public class Robot extends TimedRobot {
   private double strafeControllerVal;
   private double driveControllerVal;
   private double rotateControllerVal;
+  private boolean robotCentricControl;
 
   private boolean toggleInputControl;
   private boolean shootControl;
@@ -79,6 +80,20 @@ public class Robot extends TimedRobot {
     pistonForwardControl = m_opperateController.getRightBumperPressed();
 
     shootControl = m_opperateController.getYButton();
+
+    strafeControllerVal = JOYSTICK_CONTROL ? 
+      Math.abs(driverJoystick.getX()) > .075 ? 0 : driverJoystick.getX() : 
+      m_driverController.getLeftX();
+
+    driveControllerVal = JOYSTICK_CONTROL ?
+      Math.abs(driverJoystick.getY()) > .075 ? 0 : -driverJoystick.getY() :
+      -m_driverController.getLeftY();
+
+    rotateControllerVal = JOYSTICK_CONTROL ?
+      Math.abs(driverJoystick2.getX()) > .075 ? 0 : (driverJoystick2.getX() * .5) * swerveSpinSpeedModifier :
+      m_driverController.getRightX() * swerveSpinSpeedModifier;
+
+    robotCentricControl = JOYSTICK_CONTROL ? driverJoystick.getRawButton(2) : m_driverController.getLeftBumper();
   }
 
   // Sensors
@@ -451,12 +466,7 @@ public class Robot extends TimedRobot {
     }
 
     
-
-    if (JOYSTICK_CONTROL) {
-      swervedrive.drive(driverJoystick.getX() > -.075 && driverJoystick.getX() < .075 ? 0 : driverJoystick.getX() , -driverJoystick.getY() > -.05 && -driverJoystick.getY() < .05 ? 0 : -driverJoystick.getY(), driverJoystick2.getX() > -.05 && driverJoystick2.getX() < .05 ? 0 : (driverJoystick2.getX() * .5) * swerveSpinSpeedModifier, driverJoystick.getRawButton(2));
-    } else {
-      swervedrive.drive(m_driverController.getLeftX(), -m_driverController.getLeftY(), m_driverController.getRightX() * swerveSpinSpeedModifier, m_driverController.getLeftBumper());
-    }
+    swervedrive.drive(strafeControllerVal, driveControllerVal, rotateControllerVal, robotCentricControl);
     
     // intake decision logic
 
@@ -466,9 +476,6 @@ public class Robot extends TimedRobot {
     // if you press y, rev up shooter until target OR .25 sec (whichever is first) then run the intake to trigger a shot
 
     // NOTE this doesn't allow you to spit notes out without delay, do we need that for feeding?
-
-    
-    
     
     // shooter is running and we have no note, we just shot or we aborted a shot
     if ((shooterTimer.get() > 0 && !hasNote) || !shootControl) {
