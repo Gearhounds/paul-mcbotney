@@ -13,7 +13,9 @@ public final class Constants {
     // By using this file, we can change them all at once if we need to tune the robot in anyway.
 
     public static final int TEAM_NUMBER = 5674;
-    public static final double SHOOT_TIMEOUT = 2; // sec
-
+    public static final double SHOOT_TIMEOUT = 1; // sec
+    public static final double DEFAULT_SHOOTER_SPEED = .65; //percent
+    public static final double ARM_SPEED_UP = -.4;
+    public static final double ARM_SPEED_DOWN = .1;
     // add more constants as needed
 }

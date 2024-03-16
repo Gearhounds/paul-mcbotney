@@ -495,7 +495,7 @@ public class Robot extends TimedRobot {
     // and then set shooterSetSpeed = 0 when we fire the note
     
     if (shootControl) {
-      shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
+      shooterSetSpeed = autoAimEnabled ? shooterSpeed : Constants.DEFAULT_SHOOTER_SPEED;
     } else {
       shooterSetSpeed = 0;
     }
@@ -521,9 +521,9 @@ public class Robot extends TimedRobot {
 
     armSpeed = 0;
     if (m_opperateController.getPOV() == 0) {
-      armSpeed = -.4;
+      armSpeed = Constants.ARM_SPEED_DOWN;
     } else if (m_opperateController.getPOV() == 180) {
-      armSpeed = .1;
+      armSpeed = Constants.ARM_SPEED_UP;
     }
     else if (m_opperateController.getStartButtonPressed()) {
       autoAimEnabled = !autoAimEnabled;
