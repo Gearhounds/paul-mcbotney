@@ -84,15 +84,15 @@ public class Robot extends TimedRobot {
     // Swerve Controls
 
     strafeControllerVal = JOYSTICK_CONTROL ? 
-      Math.abs(driverJoystick.getX()) > .075 ? 0 : driverJoystick.getX() : 
+      Math.abs(driverJoystick.getX()) > Constants.JOYSTICK_DEADZONE ? 0 : driverJoystick.getX() : 
       m_driverController.getLeftX();
 
     driveControllerVal = JOYSTICK_CONTROL ?
-      Math.abs(driverJoystick.getY()) > .075 ? 0 : -driverJoystick.getY() :
+      Math.abs(driverJoystick.getY()) > Constants.JOYSTICK_DEADZONE ? 0 : -driverJoystick.getY() :
       -m_driverController.getLeftY();
 
     rotateControllerVal = JOYSTICK_CONTROL ?
-      Math.abs(driverJoystick2.getX()) > .075 ? 0 : (driverJoystick2.getX() * .5) * swerveSpinSpeedModifier :
+      Math.abs(driverJoystick2.getX()) > Constants.JOYSTICK_DEADZONE ? 0 : (driverJoystick2.getX() * .5) * swerveSpinSpeedModifier :
       m_driverController.getRightX() * swerveSpinSpeedModifier;
 
     robotCentricControl = JOYSTICK_CONTROL ? driverJoystick.getRawButton(2) : m_driverController.getLeftBumper();
