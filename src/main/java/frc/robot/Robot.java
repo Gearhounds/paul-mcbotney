@@ -169,8 +169,8 @@ public class Robot extends TimedRobot {
   private static final Timer autonMasterTimer = new Timer();
   
   NetworkTable fmsTable = NetworkTableInstance.getDefault().getTable("FMSInfo");
-  boolean isRed = fmsTable.getEntry("IsRedAlliance").getBoolean(true);
-  
+  boolean isRed;
+
   // Auton running values 
   
   private boolean isShooting = false;
@@ -195,6 +195,7 @@ public class Robot extends TimedRobot {
     slot0Configs.kD = 0.1;
     shooterArm.getConfigurator().apply(slot0Configs);
     
+    isRed = fmsTable.getEntry("IsRedAlliance").getBoolean(true);
     speakerId = isRed ? Constants.RED_SPEAKER_ID : Constants.BLUE_SPEAKER_ID;
 
     autonChooser.setDefaultOption("2 Note", twoNoteKey);
@@ -216,20 +217,24 @@ public class Robot extends TimedRobot {
     limelightY = limelightData.getEntry("ty").getDouble(0.0);
     detectedAprilTagId = limelightData.getEntry("tid").getDouble(-1);
 
+    isRed = fmsTable.getEntry("IsRedAlliance").getBoolean(true);
+    speakerId = isRed ? Constants.RED_SPEAKER_ID : Constants.BLUE_SPEAKER_ID;
+
     SmartDashboard.putNumber("LimelightY", limelightY);
-    SmartDashboard.putNumber("April Tag Id", detectedAprilTagId);
+    SmartDashboard.putNumber("Detected April Tag Id", detectedAprilTagId);
+    SmartDashboard.putBoolean("isRed", isRed);
+    SmartDashboard.putNumber("Selected Speaker ID", speakerId);
 
     yaw = gyro.getYaw();
     SmartDashboard.putNumber("Yaw", yaw);
 
-    currentShooterRPM = leftShooter.getEncoder().getVelocity();
+    currentShooterRPM = Math.abs(leftShooter.getEncoder().getVelocity());
     SmartDashboard.putNumber("RPM", currentShooterRPM);
     SmartDashboard.putNumber("Shooter Position", shooterArmPosition);
 
     hasNote = !noteSensor.get();
     SmartDashboard.putBoolean("Have Note", hasNote);
 
-    SmartDashboard.putNumber("Selected Speaker ID", speakerId);
 
     SmartDashboard.putNumber("Target RPM", targetShooterRPM);
     SmartDashboard.putNumber("Current RPM", currentShooterRPM);
@@ -268,7 +273,7 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousPeriodic() {
     final PositionVoltage m_request = new PositionVoltage(0).withSlot(0);
-    currentShooterRPM = leftShooter.getEncoder().getVelocity();
+    currentShooterRPM = leftShooter.getEncoder().getVelocity(); // TODO this is negative here but not in tele
     intakeSpeed = 0;
     speed = 0;
     // negative rotate clockwise positive clockwise
@@ -466,19 +471,18 @@ public class Robot extends TimedRobot {
     
     if (detectedAprilTagId == speakerId) {
       // y = y > 30 ? y : y - 3;
-      shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -30);
-      targetShooterRPM = MathHelp.map(shooterSpeed, .4, .75, -2600, -4700);
-      
       if (limelightY != 0) {
-        shooterSpeed = MathHelp.map(limelightY, -2, 30, .75, .4);
+        shooterSpeed = MathHelp.map(limelightY, -2, 30, .75, .4) * .9;
+        targetShooterRPM = MathHelp.map(shooterSpeed, .4, .75, 2600, 4700);
+        shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -30);
       }
+      
 
       shooterArmPosition = MathUtil.clamp(shooterArmPosition, -28, 0);
-      shooterSpeed = MathUtil.clamp(shooterSpeed, .74, .4);
-      targetShooterRPM = MathUtil.clamp(targetShooterRPM, -4700, -2600);
+      shooterSpeed = MathUtil.clamp(shooterSpeed, .4, .74);
+      targetShooterRPM = MathUtil.clamp(targetShooterRPM, 2600, 4700);
     }
 
-    
     swervedrive.drive(strafeControllerVal, driveControllerVal, rotateControllerVal, robotCentricControl);
     
     // intake decision logic

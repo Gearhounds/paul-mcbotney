@@ -22,10 +22,10 @@ public final class Constants {
     public static final double DEFAULT_SHOOTER_SPEED = .65; //percent
     public static final double SHOOTER_SPEED_UP = -.4;
     public static final double SHOOTER_SPEED_DOWN = .1;
-    public static final double JOYSTICK_DEADZONE = 0.75;
+    public static final double JOYSTICK_DEADZONE = 0.05;
 
-    public static final int RED_SPEAKER_ID = 7;
-    public static final int BLUE_SPEAKER_ID = 4;
+    public static final int RED_SPEAKER_ID = 4;
+    public static final int BLUE_SPEAKER_ID = 7;
     
     // add more constants as needed
 }
