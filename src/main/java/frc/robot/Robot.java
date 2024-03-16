@@ -17,11 +17,15 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.motorcontrol.VictorSP;
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
 
 
 /**
@@ -50,8 +54,8 @@ public class Robot extends TimedRobot {
 
   private boolean toggleInputControl;
   private boolean shootControl;
-  private boolean winchForwardControl;
-  private boolean winchBackwardControl;
+  private boolean pistonForwardControl;
+  private boolean pistonBackwardControl;
   private boolean toggleAutoAimControl;
   private boolean raiseClawsControl;
   
@@ -71,8 +75,8 @@ public class Robot extends TimedRobot {
 
     toggleInputControl = m_opperateController.getAButtonPressed();
 
-    winchBackwardControl = m_opperateController.getBackButton();
-    winchForwardControl = m_opperateController.getRightBumper();
+    pistonBackwardControl = m_opperateController.getLeftBumperPressed();
+    pistonForwardControl = m_opperateController.getRightBumperPressed();
 
     shootControl = m_opperateController.getYButton();
   }
@@ -119,11 +123,9 @@ public class Robot extends TimedRobot {
   private boolean hasNote;
 
   // Climb
-
-  private final TalonFX winch = new TalonFX(31);
-  private final  VictorSP climbArm = new VictorSP(1);
-  private double winchSpeed;
-  private double climbExtension;
+  final Compressor m_Compressor = new Compressor(PneumaticsModuleType.REVPH);
+  final DoubleSolenoid climbPiston = new DoubleSolenoid(PneumaticsModuleType.REVPH, 8, 9);
+  Value pistonValue = Value.kOff;
 
   // Limelight
   
@@ -161,6 +163,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     gyro.reset();
+    m_Compressor.enableDigital();
      
     CameraServer.startAutomaticCapture();
     Slot0Configs slot0Configs = new Slot0Configs();
@@ -414,7 +417,6 @@ public class Robot extends TimedRobot {
     intakeSpeed = shouldRunIntake ? -1 : 0;
 
     swervedrive.autoDrive(angle-yaw, speed, rotate);
-    climbArm.set(-1);
     intake.set(intakeSpeed);
     shooterArm.setControl(m_request.withPosition(shooterArmPosition));
     rightShooter.set(shooterSpeed);
@@ -426,7 +428,6 @@ public class Robot extends TimedRobot {
   public void teleopInit() {
     shouldRunIntake = false;
     autoAimEnabled = true;
-    climbExtension = -1;
   }
 
   /** This function is called periodically during operator control. */
@@ -505,16 +506,18 @@ public class Robot extends TimedRobot {
     } else {
       intakeSpeed = shouldRunIntake ? -1 : 0;
     }
-
-    if (winchBackwardControl) {
-      winchSpeed = -1;
-    } else if (winchForwardControl) {
-      winchSpeed = 1;
+    
+    
+    if (pistonForwardControl) {
+      pistonValue = Value.kForward;
+    } else if (pistonBackwardControl) {
+      pistonValue = Value.kReverse;
     } else {
-      winchSpeed = 0;
+      pistonValue = Value.kOff;
     }
-
-
+    climbPiston.set(pistonValue);
+    
+    
 
     armSpeed = 0;
     if (m_opperateController.getPOV() == 0) {
@@ -526,13 +529,9 @@ public class Robot extends TimedRobot {
       autoAimEnabled = !autoAimEnabled;
     }
 
-    if (m_opperateController.getLeftBumperPressed()) {
-      climbExtension = 1;
-      autoAimEnabled = false;
-    }
+    
 
-    climbArm.set(climbExtension);
-    winch.set(winchSpeed);
+    
     intake.set(intakeSpeed);
     
     if (!autoAimEnabled) {
@@ -540,7 +539,7 @@ public class Robot extends TimedRobot {
     } else {
       shooterArm.setControl(m_request.withPosition(shooterArmPosition));
     }
-
+    
     shooterSetSpeed *= -1;
     rightShooter.set(shooterSetSpeed);
     leftShooter.set(-shooterSetSpeed);
