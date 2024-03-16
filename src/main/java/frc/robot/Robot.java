@@ -2,47 +2,30 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-
-//// Required Imports to run any code ////
 package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 
-import com.ctre.phoenix.motorcontrol.can.VictorSPX;
-import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.PositionVoltage;
-//// Imports for motors ////
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.revrobotics.CANSparkMax;
-
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.DigitalOutput;
-import edu.wpi.first.wpilibj.DutyCycleEncoder;
-//// Imports for controls ////
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.PWM;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.motorcontrol.VictorSP;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
-//// Imports for Shuffleboard ////
-// import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-// import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
-
-//// Imports for autonomus ////
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkLowLevel.MotorType;
-
 import edu.wpi.first.wpilibj.Timer;
-// import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
 
 
 /**
@@ -52,124 +35,126 @@ import edu.wpi.first.wpilibj.Timer;
  * project.
  */
 public class Robot extends TimedRobot {
-  String m_autoSelected;
-  int masterWheelAngle = 0;
-  final SendableChooser<String> m_chooser = new SendableChooser<>();
-  private static final String kDefaultAuto = "2 Note";
-  private static final String k4NoteBlue = "4 Note Blue";
-  private static final String k4NoteRed = "4 Note Red";
-  private static final String kBackwards = "Backwards";
 
-  final XboxController m_driverController = new XboxController(0);
-  final XboxController m_opperateController = new XboxController(1);
+  // Controllers
+
+  private final boolean JOYSTICK_CONTROL = true;
+
+  private final XboxController m_driverController = new XboxController(0);
+  private final XboxController m_opperateController = new XboxController(1);
  
+  private final Joystick driverJoystick = new Joystick(0);
+  private final Joystick driverJoystick2 = new Joystick(2);
+
+  // Control Values
+
+  private double strafeControllerVal;
+  private double driveControllerVal;
+  private double rotateControllerVal;
+
+  private boolean toggleInputControl;
+  private boolean shootControl;
+  private boolean pistonForwardControl;
+  private boolean pistonBackwardControl;
+  private boolean toggleAutoAimControl;
+  private boolean raiseClawsControl;
   
-  final Joystick driverJoystick = new Joystick(0);
-  final Joystick driverJoystick2 = new Joystick(2);
-
-  final AHRS gyro = new AHRS();
-  //final CANSparkMax spark = new CANSparkMax(0, null);
+  private int operatorDPad;
+  private boolean raiseShooterControl;
+  private boolean lowerShooterControl;
   
-  // private ShuffleboardTab tab = new Shuffleboard.get
+  private double swerveSpinSpeedModifier;
 
-  private WheelDrive backRight = new WheelDrive(5, 6, 11);
-  private WheelDrive backLeft = new WheelDrive(7, 8, 10);
-  private WheelDrive frontRight = new WheelDrive(3, 4, 12);
-  private WheelDrive frontLeft = new WheelDrive(1, 2, 9);
+  private void updateControlValues() {
+    // Set control variables with this function and call it at the top of teleop periodic
+    if (JOYSTICK_CONTROL) {
+      swerveSpinSpeedModifier = driverJoystick2.getRawButton(2) ? .25 : 1;
+    } else {
+      swerveSpinSpeedModifier = m_driverController.getXButton() ? .25 : 1;
+    }
 
-  TalonFX winch = new TalonFX(31);
-  CANSparkMax intake = new CANSparkMax(32, MotorType.kBrushless);
+    toggleInputControl = m_opperateController.getAButtonPressed();
 
-  double intakeSpeed;
-  double winchSpeed;
+    pistonBackwardControl = m_opperateController.getLeftBumperPressed();
+    pistonForwardControl = m_opperateController.getRightBumperPressed();
 
-  CANSparkMax shootLeft = new CANSparkMax(33, MotorType.kBrushless);
-  CANSparkMax shootRight = new CANSparkMax(34, MotorType.kBrushless);
+    shootControl = m_opperateController.getYButton();
+  }
 
-  double shootSpeed;     
+  // Sensors
 
-  TalonFX shootArm = new TalonFX(35);
-
-  double armSpeed;
-
-  PIDController pid = new PIDController(.02, .001, 0);
-
-  NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
-
-  public double x;
-  public double y;
-  public double area;
-  public double id;
-
-  NetworkTable fmsTable = NetworkTableInstance.getDefault().getTable("FMSInfo");
-
-  NetworkTableEntry Red = fmsTable.getEntry("IsRedAlliance");
-
-  
-
-  boolean isRed = Red.getBoolean(true);
-
-  double ampId;
-  double speakId;
-
-  private Swervedrive swervedrive = new Swervedrive(backRight, backLeft, frontRight, frontLeft, gyro);
-  public double angle;
-  public double speed;
-  public double step;
-  public Timer m_timer = new Timer();
-
-  double pos;
-  double oldPos;
-  double actSetPos;
-
-  double posLat;
-
-  StatusSignal<Double> posit;
-
-  boolean runningIntake;
-
-  boolean aim;
-
-  double position;
-
-  boolean note;
-
-
-  DigitalInput sensor = new DigitalInput(0);
-  
-  
-  DutyCycleEncoder encode = new DutyCycleEncoder(1);
-
-  double shooterSpeed = 0;
-  double oldSpeed = 0;
-
-  double shooterRPM = 0;
-  double targetRPM = 0;
-
-  boolean slowedTurn = false;
-
-  double slow = 1;
-
-  double rotate = 0;
-
-  boolean isShooting = false;
-
-  Timer shootTimer = new Timer();
-
+  private final AHRS gyro = new AHRS();
   double yaw;
-
-  boolean control = false;
-
-  VictorSP climbArm = new VictorSP(1);
-
-  boolean climbUp = false;
-
-
-   public double clawSpeed = 0;
-
-
   
-  // private Swervedrive swervedrive = new Swervedrive(null, null, null, frontLeft);
+  DigitalInput noteSensor = new DigitalInput(0);
+
+  // Drivetrain
+
+  private final WheelDrive backRight = new WheelDrive(5, 6, 11);
+  private final WheelDrive backLeft = new WheelDrive(7, 8, 10);
+  private final WheelDrive frontRight = new WheelDrive(3, 4, 12);
+  private final WheelDrive frontLeft = new WheelDrive(1, 2, 9);
+  private final Swervedrive swervedrive = new Swervedrive(backRight, backLeft, frontRight, frontLeft, gyro);
+  
+  // Shooter
+  
+  private final CANSparkMax leftShooter = new CANSparkMax(33, MotorType.kBrushless);
+  private final CANSparkMax rightShooter = new CANSparkMax(34, MotorType.kBrushless);
+  
+  private final TalonFX shooterArm = new TalonFX(35);
+  private double armSpeed; // for manual control
+  private boolean autoAimEnabled;
+  
+  private double shooterArmPosition;
+  
+  private double shooterSetSpeed;
+  private double shooterSpeed = 0;
+
+  private double currentShooterRPM = 0;
+  private double targetShooterRPM = 0;
+
+  private final Timer shooterTimer = new Timer();
+
+  // Intake
+
+  private final CANSparkMax intake = new CANSparkMax(32, MotorType.kBrushless);
+  private double intakeSpeed;
+  private boolean shouldRunIntake;
+  private boolean hasNote;
+
+  // Climb
+  final Compressor m_Compressor = new Compressor(PneumaticsModuleType.REVPH);
+  final DoubleSolenoid climbPiston = new DoubleSolenoid(PneumaticsModuleType.REVPH, 8, 9);
+  Value pistonValue = Value.kOff;
+
+  // Limelight
+  
+  NetworkTable limelightData = NetworkTableInstance.getDefault().getTable("limelight");
+  public double limelightY;
+  public double detectedAprilTagId;
+
+  private double speakerId;
+  
+  // Autonomous Mode
+  
+  String m_autoSelected;
+  final SendableChooser<String> autonChooser = new SendableChooser<>();
+  private static final String twoNoteKey = "two_note";
+  private static final String threeNoteBlueKey = "three_note_blue";
+  private static final String threeNoteRedKey = "three_note_red";
+  private static final String crossLineKey = "cross_line";
+  
+  private static final Timer autonMasterTimer = new Timer();
+  
+  NetworkTable fmsTable = NetworkTableInstance.getDefault().getTable("FMSInfo");
+  boolean isRed = fmsTable.getEntry("IsRedAlliance").getBoolean(true);
+  
+  // Auton running values 
+  private boolean isShooting = false;
+  private double angle;
+  private double speed;
+  private double step;
+  private double rotate = 0;
   
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -178,28 +163,28 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     gyro.reset();
+    m_Compressor.enableDigital();
      
     CameraServer.startAutomaticCapture();
-    oldPos = 0;
     Slot0Configs slot0Configs = new Slot0Configs();
     slot0Configs.kP = 4;
     slot0Configs.kI = 0;
     slot0Configs.kD = 0.1;
-    shootArm.getConfigurator().apply(slot0Configs);
+    shooterArm.getConfigurator().apply(slot0Configs);
     
     if (isRed)
     {
-      speakId = 4; 
+      speakerId = 4; 
     }
     else
     {
-      speakId = 8;
+      speakerId = 8;
     }
-    m_chooser.setDefaultOption("2 Note", kDefaultAuto);
-    m_chooser.addOption("4 Note Blue", k4NoteBlue);
-    m_chooser.addOption("4 Note Red", k4NoteRed);
-    m_chooser.addOption("Backwards", kBackwards);
-    SmartDashboard.putData("Auto choices", m_chooser);
+    autonChooser.setDefaultOption("2 Note", twoNoteKey);
+    autonChooser.addOption("4 Note Blue", threeNoteBlueKey);
+    autonChooser.addOption("4 Note Red", threeNoteRedKey);
+    autonChooser.addOption("Backwards", crossLineKey);
+    SmartDashboard.putData("Auto choices", autonChooser);
   }
 
   /**
@@ -211,24 +196,21 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
-    SmartDashboard.putNumber("pos", pos);
-    
-    NetworkTableEntry tx = table.getEntry("tx");
-    NetworkTableEntry ty = table.getEntry("ty");
-    NetworkTableEntry ta = table.getEntry("ta");
-    NetworkTableEntry tid = table.getEntry("tid");
+    limelightY = limelightData.getEntry("ty").getDouble(0.0);
+    detectedAprilTagId = limelightData.getEntry("tid").getDouble(-1);
 
-    x = tx.getDouble(0.0);
-    y = ty.getDouble(0.0);
-    area = ta.getDouble(0.0);
-    id = tid.getDouble(-1);
+    SmartDashboard.putNumber("LimelightY", limelightY);
+    SmartDashboard.putNumber("April Tag Id", detectedAprilTagId);
 
+    yaw = gyro.getYaw();
+    SmartDashboard.putNumber("Yaw", yaw);
 
-    SmartDashboard.putNumber("LimelightX", x);
-    SmartDashboard.putNumber("LimelightY", y);
-    SmartDashboard.putNumber("LimelightArea", area);
-    SmartDashboard.putNumber("April Tag Id", id);
-    
+    currentShooterRPM = leftShooter.getEncoder().getVelocity();
+    SmartDashboard.putNumber("RPM", currentShooterRPM);
+    SmartDashboard.putNumber("Shooter Position", shooterArmPosition);
+
+    hasNote = !noteSensor.get();
+    SmartDashboard.putBoolean("Have Note", hasNote);
   }
 
   /**
@@ -243,118 +225,109 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousInit() {
-    m_autoSelected = m_chooser.getSelected();
+    m_autoSelected = autonChooser.getSelected();
+    System.out.println("Running Auton: " + m_autoSelected);
     
-    System.out.println("Auto selected: " + m_autoSelected);
-    // gyro.reset();
     angle = 0;
-    speed = .5;
     step = 0;
-    m_timer.reset();
-    m_timer.start();
+    autonMasterTimer.reset();
+    autonMasterTimer.start();
     
-    speakId = isRed ? 4 : 7;
+    speakerId = isRed ? 4 : 7;
   }
 
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
     final PositionVoltage m_request = new PositionVoltage(0).withSlot(0);
-    shooterRPM = shootLeft.getEncoder().getVelocity();
-    yaw = gyro.getYaw();
-    SmartDashboard.putNumber("yaw", yaw);
+    currentShooterRPM = leftShooter.getEncoder().getVelocity();
     intakeSpeed = 0;
     speed = 0;
+    // negative rotate clockwise positive clockwise
     rotate = 0;
 
-    // negative rotate clockwise positive clockwise
 
-    if (id == speakId) {
-      actSetPos = MathHelp.map(y, -2, 30, -10, -28);
-      shooterSpeed = MathHelp.map(y, -2, 30, .75, .4);
-      targetRPM = MathHelp.map(shooterSpeed, .4, .75, -2600, -4700);
-      if (y != 0) {
-        oldPos = actSetPos;
-        oldSpeed = shooterSpeed;
-      } else {
-        actSetPos = oldPos;
-        shooterSpeed = oldSpeed;
+    if (detectedAprilTagId == speakerId) {
+      shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -28);
+      targetShooterRPM = MathHelp.map(shooterSpeed, .4, .75, -2600, -4700);
+      
+      if (limelightY != 0) {
+        shooterSpeed = MathHelp.map(limelightY, -2, 30, .75, .4);
       }
 
-      actSetPos = MathUtil.clamp(actSetPos, -28, 0);
+      shooterArmPosition = MathUtil.clamp(shooterArmPosition, -28, 0);
       shooterSpeed = MathUtil.clamp(shooterSpeed, .4, .75);
-      targetRPM = MathUtil.clamp(targetRPM, -4700, -2600);
+      targetShooterRPM = MathUtil.clamp(targetShooterRPM, -4700, -2600);
     }
 
     switch (m_autoSelected) {
-      case k4NoteBlue: 
-        System.out.println("Running 4Note Auton " + m_autoSelected);
+      case threeNoteBlueKey: 
         if (step == 0) { // backup
         angle = 0;
         speed = .4;
-        if (m_timer.get() > .125) {
-          m_timer.reset();
+        if (autonMasterTimer.get() > .125) {
+          autonMasterTimer.reset();
           step++;
         }
         } else if (step == 1) {
           isShooting = true;
-          if (m_timer.get() > 1.75) {
-            m_timer.reset();
+          if (autonMasterTimer.get() > 1.75) {
+            autonMasterTimer.reset();
             isShooting = false;
             step++;  
           }
         } else if (step == 2) {
           angle = 0;
           speed = .4;
-          if (!runningIntake)
+          if (!shouldRunIntake)
           {
-            m_timer.reset();
+            autonMasterTimer.reset();
             step++;
           }
-          runningIntake = true;
+          shouldRunIntake = true;
         } else if (step == 3) {
           isShooting = true;
-          if (m_timer.get() > 1.6) {
-            m_timer.reset();
+          if (autonMasterTimer.get() > 1.6) {
+            autonMasterTimer.reset();
             isShooting = false;
             step++;  
           }
         } else if (step == 4) {
           angle = 315;
-          if(m_timer.get() > .25) {
-            m_timer.reset();
+          if (autonMasterTimer.get() > .25) {
+            autonMasterTimer.reset();
             step++;
           }
         } else if (step == 5) {
           angle = 315;
           speed = .75;
-          if (m_timer.get() > 1.35)
+          if (autonMasterTimer.get() > 1.35)
           {
-            m_timer.reset();
+            autonMasterTimer.reset();
             step++;
           }
         } else if (step == 6) {
           angle = 0;
           speed = .75;
-          if (m_timer.get() > .8)
+          if (autonMasterTimer.get() > .8)
           {
-            m_timer.reset();
+            autonMasterTimer.reset();
             step++;
           }
         } else if(step == 7) {
           if (yaw > 0)
           {
             rotate = -.1;
-            if(MathHelp.isEqualApprox(yaw, 7 , 1))
+            if (MathHelp.isEqualApprox(yaw, 7 , 1))
             {
-              m_timer.reset();
+              autonMasterTimer.reset();
               step++;
             }
           } else {
             rotate = .1;
-            if(MathHelp.isEqualApprox(yaw, 5 , 1))
+            if (MathHelp.isEqualApprox(yaw, 5 , 1))
             {
-              m_timer.reset();
+              autonMasterTimer.reset();
               step++;
             }
         }
@@ -362,478 +335,215 @@ public class Robot extends TimedRobot {
       } else if (step == 8) {
         angle = 0;
         speed = .8;
-        if (!runningIntake || m_timer.get() > .6)
-        {
-          m_timer.reset();
+        if (!shouldRunIntake || autonMasterTimer.get() > .6) {
+          autonMasterTimer.reset();
           step++;
         }
       } else if (step == 9) {
         angle = 165;
         speed = .8;
-        if (m_timer.get() > 2)
-        {
-          m_timer.reset();
+        if (autonMasterTimer.get() > 2) {
+          autonMasterTimer.reset();
           step++;
         }
       } else if (step == 10) {
         rotate = -.1;
-          if(MathHelp.isEqualApprox(yaw,  -10, 2))
-          {
-            m_timer.reset();
+          if (MathHelp.isEqualApprox(yaw,  -10, 2)) {
+            autonMasterTimer.reset();
             step++;
           }
       } else if (step == 11) { 
-        if(m_timer.get() > .35)
-          {
-            m_timer.reset();
+        if (autonMasterTimer.get() > .35) {
+            autonMasterTimer.reset();
             step++;
           }
         }  
         break;
-      case kBackwards:
-        System.out.println("Running Backwards Auton " + m_autoSelected);
+      case crossLineKey:
         if (step == 0) {
           angle = 0;
           speed = .6;
-          if(m_timer.get() > 3)
-          {
-            m_timer.reset();
+          if(autonMasterTimer.get() > 3) {
+            autonMasterTimer.reset();
             step++;
           }
         }
         break;
-      case kDefaultAuto:
+      case twoNoteKey:
       default:
-        System.out.println("Running Default Auton " + m_autoSelected);
         if (step == 0) { // backup
           angle = 0;
           speed = .4;
-          if (m_timer.get() > .125) {
-            m_timer.reset();
+          if (autonMasterTimer.get() > .125) {
+            autonMasterTimer.reset();
             step++;
           }
         } else if (step == 1) { // shoot
           isShooting = true;
-          if (m_timer.get() > 1.75)
-          {
-            m_timer.reset();
+          if (autonMasterTimer.get() > 1.75) {
+            autonMasterTimer.reset();
             isShooting = false;
             step++;  
           }
         } else if (step == 2) { // backup more
           angle = 0;
           speed = .4;
-          if (!runningIntake) {
-            m_timer.reset();
+          if (!shouldRunIntake) {
+            autonMasterTimer.reset();
             step++;
           }
-          runningIntake = true;
+          shouldRunIntake = true;
         } else if (step == 3) { // shoot
           isShooting = true;
-          if (m_timer.get() > 1.6) {
-            m_timer.reset();
+          if (autonMasterTimer.get() > 1.6) {
+            autonMasterTimer.reset();
             isShooting = false;
             step++;  
           }
         }
         break;
     }
-    
-    /*
-     * 
-     // boolean debugging = false;
-     // if (debugging) {
-     //   if (step == 0) {
-     //     angle = 0;
-     //     speed = .4;
-     //     if(m_timer.get() > .3)
-     //     {
-     //       m_timer.reset();
-     //       step++;
-     //     }
-     //   }
-     //   if (step == 1) {
-         
-     //       rotate = -.1;
-     //       if(MathHelp.isEqualApprox(yaw,  -10, 2))
-     //       {
-     //         m_timer.reset();
-     //         step++;
-     //       }
-         
-     //   } 
-     // } else {
-     //   if (step == 0) { // backup
-     //     angle = 0;
-     //     speed = .4;
-     //     if (m_timer.get() > .125)
-     //     {
-     //       m_timer.reset();
-     //       step++;
-     //     }
-     //   } else if (step == 1) {
-     //     isShooting = true;
-     //     if (m_timer.get() > 1.75)
-     //     {
-     //       m_timer.reset();
-     //       isShooting = false;
-     //       step++;  
-     //     }
-     //   } else if (step == 2) {
-     //     angle = 0;
-     //     speed = .4;
-     //     if (!intook)
-     //     {
-     //       m_timer.reset();
-     //       step++;
-     //     }
-     //     intook = true;
-     //   } else if (step == 3) {
-     //     isShooting = true;
-     //     if (m_timer.get() > 1.6)
-     //     {
-     //       m_timer.reset();
-     //       isShooting = false;
-     //       step++;  
-     //     }
-     //   } else if (step == 4) {
-     //     angle = 315;
-     //     if(m_timer.get() > .25)
-     //     {
-     //       m_timer.reset();
-     //       step++;
-     //     }
-     //   } else if (step == 5) {
-     //     angle = 315;
-     //     speed = .75;
-     //     if (m_timer.get() > 1.35)
-     //     {
-     //       m_timer.reset();
-     //       step++;
-     //     }
-     //   } else if (step == 6) {
-     //     angle = 0;
-     //     speed = .75;
-     //     if (m_timer.get() > .8)
-     //     {
-     //       m_timer.reset();
-     //       step++;
-     //     }
-     //   } else if(step == 7) {
-     //     if(yaw > 0)
-     //     {
-     //       rotate = -.1;
-     //       if(MathHelp.isEqualApprox(yaw, 7 , 1))
-     //       {
-     //         m_timer.reset();
-     //         step++;
-     //       }
-     //     }
-     //     else
-     //     {
-     //       rotate = .1;
-     //       if(MathHelp.isEqualApprox(yaw, 5 , 1))
-     //       {
-     //         m_timer.reset();
-     //         step++;
-     //       }
-     //     }
-   
-     //   } else if (step == 8) {
-     //     angle = 0;
-     //     speed = .8;
-     //     if (!intook || m_timer.get() > .6)
-     //     {
-     //       m_timer.reset();
-     //       step++;
-     //     }
-     //   } else if (step == 9) {
-     //     angle = 165;
-     //     speed = .8;
-     //     if (m_timer.get() > 2)
-     //     {
-     //       m_timer.reset();
-     //       step++;
-     //     }
-     //   } else if (step == 10) {
-     //     rotate = -.1;
-     //       if(MathHelp.isEqualApprox(yaw,  -10, 2))
-     //       {
-     //         m_timer.reset();
-     //         step++;
-     //       }
-   
-     //   } else if (step == 11) {
-         
-     //     if(m_timer.get() > .35)
-     //     {
-     //       m_timer.reset();
-     //       step++;
-     //     }
-     //   }  else if (step == 12) {
-     //     isShooting = true;
-     //     actSetPos = -23;
-     //     if(m_timer.get() > 1)
-     //     {
-     //       m_timer.reset();
-     //       step++;
-     //     }
-     //   } 
-     // }
-     
-     */
 
     if (isShooting) { // shooting
-      if (shooterRPM < targetRPM || m_timer.get() > 1.5) {
-          runningIntake = true;
+      if (currentShooterRPM < targetShooterRPM || autonMasterTimer.get() > 1.5) {
+          shouldRunIntake = true;
       }
     } else { // not shooting
-      if (!sensor.get()) { // sensor reads false when it has a note
-        runningIntake = false;
+      if (hasNote) { // sensor reads false when it has a note
+        shouldRunIntake = false;
       }
     }
 
+    intakeSpeed = shouldRunIntake ? -1 : 0;
 
-    if (runningIntake) {
-      intakeSpeed = -1;
-    }
-    
-    // if ( angle < 0 ) 
-    // {
-    //   angle = 360 - angle;
-    // }
-    
     swervedrive.autoDrive(angle-yaw, speed, rotate);
-    climbArm.set(-1);
     intake.set(intakeSpeed);
-    shootArm.setControl(m_request.withPosition(actSetPos));
-    shootRight.set(shooterSpeed);
-    shootLeft.set(-shooterSpeed);
+    shooterArm.setControl(m_request.withPosition(shooterArmPosition));
+    rightShooter.set(shooterSpeed);
+    leftShooter.set(-shooterSpeed);
   }
 
   /** This function is called once when teleop is enabled. */
   @Override
   public void teleopInit() {
-    runningIntake = false;
-    aim = true;
-    clawSpeed = -1;
-    note = false;
-    oldPos = 0;
-    oldSpeed = 0;
-    m_timer.reset();
-    slowedTurn = false;
-    slow = 1;
-    control = true;
+    shouldRunIntake = false;
+    autoAimEnabled = true;
   }
 
   /** This function is called periodically during operator control. */
   @Override
-  public void teleopPeriodic() {  
+  public void teleopPeriodic() {
     final PositionVoltage m_request = new PositionVoltage(0).withSlot(0);
-    SmartDashboard.putBoolean("sense", !sensor.get());
-
-    SmartDashboard.putNumber("arm", encode.getAbsolutePosition());
-
-    yaw = gyro.getYaw();
-    SmartDashboard.putNumber("yaw", yaw);
+    updateControlValues();
     
-    if (id == speakId)
-    {
-      // y = y > 30 ? y: y - 3;
-      actSetPos = MathHelp.map(y, -2, 30, -10, -30);
-      shooterSpeed = MathHelp.map(y, -2, 30, .75, .4);
-      targetRPM = MathHelp.map(shooterSpeed, .4, .75, -2600, -4700);
-      if (y != 0)
-      {
-        oldPos = actSetPos;
-        oldSpeed = shooterSpeed;
-      }
-      else
-      {
-        actSetPos = oldPos;
-        shooterSpeed = oldSpeed;
-      }
-      SmartDashboard.putNumber("Shoot Angle", actSetPos);
+    if (detectedAprilTagId == speakerId) {
+      // y = y > 30 ? y : y - 3;
+      shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -30);
+      targetShooterRPM = MathHelp.map(shooterSpeed, .4, .75, -2600, -4700);
       
+      if (limelightY != 0) {
+        shooterSpeed = MathHelp.map(limelightY, -2, 30, .75, .4);
+      }
 
-      if (actSetPos > 0)
-      {
-        actSetPos = 0;
-      }
-      if (actSetPos < -28)
-      {
-        actSetPos = -28;
-      }
-      if (shooterSpeed > .75)
-      {
-        shooterSpeed = .75;
-      }
-      if (shooterSpeed < .4)
-      {
-        shooterSpeed = .4;
-      }
-      if (targetRPM > -2600)
-      {
-        targetRPM = -2600;
-      }
-      if (targetRPM < -4700)
-      {
-        targetRPM = -4700;
-      }
-    }
-    position = actSetPos;
-    
-    shooterRPM = shootLeft.getEncoder().getVelocity();
-    SmartDashboard.putNumber("RPM", shooterRPM);
-
-    if (m_driverController.getXButton())
-    {
-      slowedTurn = !slowedTurn;
+      shooterArmPosition = MathUtil.clamp(shooterArmPosition, -28, 0);
+      shooterSpeed = MathUtil.clamp(shooterSpeed, .74, .4);
+      targetShooterRPM = MathUtil.clamp(targetShooterRPM, -4700, -2600);
     }
 
-    if (!control) {
-      slow = !m_driverController.getXButton() ? 1 : .25;
-    }
-    else {
-      slow = !driverJoystick2.getRawButton(2) ? 1 : .25;
-    }
-    if (!control)
-    {
-      swervedrive.drive(m_driverController.getLeftX(), -m_driverController.getLeftY(), m_driverController.getRightX() * slow, m_driverController.getLeftBumper());
-    }
-    else
-    {
-      swervedrive.drive(driverJoystick.getX() > -.075 && driverJoystick.getX() < .075 ? 0 : driverJoystick.getX() , -driverJoystick.getY() > -.05 && -driverJoystick.getY() < .05 ? 0 : -driverJoystick.getY(), driverJoystick2.getX() > -.05 && driverJoystick2.getX() < .05 ? 0 : (driverJoystick2.getX() * .5) * slow, driverJoystick.getRawButton(2));
-    }
     
-      
 
-    intakeSpeed = 0;
-    if(m_opperateController.getAButtonPressed())
-    {
-      runningIntake = !runningIntake;
+    if (JOYSTICK_CONTROL) {
+      swervedrive.drive(driverJoystick.getX() > -.075 && driverJoystick.getX() < .075 ? 0 : driverJoystick.getX() , -driverJoystick.getY() > -.05 && -driverJoystick.getY() < .05 ? 0 : -driverJoystick.getY(), driverJoystick2.getX() > -.05 && driverJoystick2.getX() < .05 ? 0 : (driverJoystick2.getX() * .5) * swerveSpinSpeedModifier, driverJoystick.getRawButton(2));
+    } else {
+      swervedrive.drive(m_driverController.getLeftX(), -m_driverController.getLeftY(), m_driverController.getRightX() * swerveSpinSpeedModifier, m_driverController.getLeftBumper());
     }
-    if(m_opperateController.getYButton() == false && m_driverController.getBButton() == false)
-    {
-      if(!sensor.get())
-      {
-        runningIntake = false;
+    
+    // intake decision logic
+
+    // intended behavior: 
+    // if you hit a toggle the intake
+    // if you pick up a note turn off the intake
+    // if you press y, rev up shooter until target OR .25 sec (whichever is first) then run the intake to trigger a shot
+
+    // NOTE this doesn't allow you to spit notes out without delay, do we need that for feeding?
+
+    
+    
+    
+    // shooter is running and we have no note, we just shot or we aborted a shot
+    if ((shooterTimer.get() > 0 && !hasNote) || !shootControl) {
+      shooterTimer.stop();
+      shooterTimer.reset();
+    }
+    
+    if (hasNote && shootControl) {
+      // we are loaded and trying to shoot
+      shooterTimer.start();
+      if (currentShooterRPM >= targetShooterRPM || shooterTimer.hasElapsed(Constants.SHOOT_TIMEOUT)) {
+        shouldRunIntake = true;
       }
+    } else if (hasNote) {
+      // we are loaded stop the intake
+      shouldRunIntake = false;
+    } else if (toggleInputControl) {
+      // manual toggle
+      shouldRunIntake = !shouldRunIntake;
     }
-    if (m_opperateController.getYButton() == true && aim)
-    {
-      if (shooterRPM < targetRPM)
-      {
-        m_timer.start();
-        if(m_timer.get() > .25)
-        {
-          runningIntake = true;
-        }
-      }
-      
-    }
-    else
-    {
-      m_timer.reset();
+
+    // TODO should this get moved up to the intake code as well? or possibly be its own y button press?
+    // maybe something like if (buttonPressed && shooterSetSpeed == 0) -> shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
+    // and then set shooterSetSpeed = 0 when we fire the note
+    
+    if (shootControl) {
+      shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
+    } else {
+      shooterSetSpeed = 0;
     }
     
-    
-    if (runningIntake)
-    {
-      intakeSpeed = -1;
-    }
-    
-    if (m_opperateController.getPOV() == 90)
-    {
+    if (m_opperateController.getPOV() == 90) {
+      // override to backdrive intake
       intakeSpeed = 1;
-    }
-    // -4700 == 75
-    // -2600 == 40
-
-
-    
-    winchSpeed = 0;
-    if (m_opperateController.getRawButton(7))
-    {
-      winchSpeed = -1;
-      
-    }
-    if (m_opperateController.getRightBumper())
-    {
-      winchSpeed = 1;
+    } else {
+      intakeSpeed = shouldRunIntake ? -1 : 0;
     }
     
     
-
-    shootSpeed = 0;
-    if (m_opperateController.getYButton() && aim) {
-      shootSpeed = shooterSpeed;
+    if (pistonForwardControl) {
+      pistonValue = Value.kForward;
+    } else if (pistonBackwardControl) {
+      pistonValue = Value.kReverse;
+    } else {
+      pistonValue = Value.kOff;
     }
-    else if (m_opperateController.getYButton())
-    {
-      shootSpeed = .65;
-    }
+    climbPiston.set(pistonValue);
+    
     
 
     armSpeed = 0;
-    // if (m_opperateController.getRightBumperPressed() && aim)
-    // {
-    //   position = -31.17;
-    // }
-    // else if (m_opperateController.getRightStickButtonPressed() && aim)
-    // {
-    //   position = 0;
-    // }
-    
-    // else if (m_opperateController.getLeftBumperPressed() && aim)
-    // {
-    //   position = -42;
-    // }
-    // else 
-    if (m_opperateController.getPOV() == 0)
-    {
+    if (m_opperateController.getPOV() == 0) {
       armSpeed = -.4;
-    }
-    else if (m_opperateController.getPOV() == 180)
-    {
+    } else if (m_opperateController.getPOV() == 180) {
       armSpeed = .1;
     }
-    else if (m_opperateController.getStartButtonPressed())
-    {
-      aim = !aim;
+    else if (m_opperateController.getStartButtonPressed()) {
+      autoAimEnabled = !autoAimEnabled;
     }
 
     
+
     
-    if (m_opperateController.getLeftBumperPressed())
-    {
-      clawSpeed = 1;
-      aim = !aim;
-    }
-    climbArm.set(clawSpeed);
-    
-    // -34.6
-    // if(aim)
-    // {
-    //   armSpeed = actSpeed;
-    // }
-    // armSpeed = 0;
-    winch.set(winchSpeed);
     intake.set(intakeSpeed);
     
-    
-    if (!aim) {
-      shootArm.set(armSpeed);
+    if (!autoAimEnabled) {
+      shooterArm.set(armSpeed);
     } else {
-      shootArm.setControl(m_request.withPosition(position));
+      shooterArm.setControl(m_request.withPosition(shooterArmPosition));
     }
     
-
-    shootRight.set(shootSpeed);
-    shootLeft.set(-shootSpeed);
-    
+    shooterSetSpeed *= -1;
+    rightShooter.set(shooterSetSpeed);
+    leftShooter.set(-shooterSetSpeed);
   }
-  
 
   /** This function is called once when the robot is disabled. */
   @Override
@@ -841,7 +551,6 @@ public class Robot extends TimedRobot {
   /** This function is called periodically when disabled. */
   @Override
   public void disabledPeriodic() {}
-
 
   /** This function is called once when test mode is enabled. */
   @Override
