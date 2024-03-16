@@ -145,8 +145,8 @@ public class Robot extends TimedRobot {
   private boolean hasNote;
 
   // Climb
-  final Compressor m_Compressor = new Compressor(PneumaticsModuleType.REVPH);
-  final DoubleSolenoid climbPiston = new DoubleSolenoid(PneumaticsModuleType.REVPH, 8, 9);
+  final Compressor m_Compressor = new Compressor(30, PneumaticsModuleType.REVPH);
+  final DoubleSolenoid climbPiston = new DoubleSolenoid(30, PneumaticsModuleType.REVPH, 8, 9);
   Value pistonValue = Value.kOff;
 
   // Limelight
@@ -185,7 +185,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     gyro.reset();
-    m_Compressor.enableDigital();
+    m_Compressor.enableAnalog(90,120);
      
     CameraServer.startAutomaticCapture();
     Slot0Configs slot0Configs = new Slot0Configs();
