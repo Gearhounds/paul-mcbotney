@@ -172,6 +172,7 @@ public class Robot extends TimedRobot {
   boolean isRed = fmsTable.getEntry("IsRedAlliance").getBoolean(true);
   
   // Auton running values 
+  
   private boolean isShooting = false;
   private double angle;
   private double speed;
@@ -194,14 +195,8 @@ public class Robot extends TimedRobot {
     slot0Configs.kD = 0.1;
     shooterArm.getConfigurator().apply(slot0Configs);
     
-    if (isRed)
-    {
-      speakerId = 4; 
-    }
-    else
-    {
-      speakerId = 8;
-    }
+    speakerId = isRed ? Constants.RED_SPEAKER_ID : Constants.BLUE_SPEAKER_ID;
+
     autonChooser.setDefaultOption("2 Note", twoNoteKey);
     autonChooser.addOption("4 Note Blue", threeNoteBlueKey);
     autonChooser.addOption("4 Note Red", threeNoteRedKey);
@@ -233,6 +228,17 @@ public class Robot extends TimedRobot {
 
     hasNote = !noteSensor.get();
     SmartDashboard.putBoolean("Have Note", hasNote);
+
+    SmartDashboard.putNumber("Selected Speaker ID", speakerId);
+
+    SmartDashboard.putNumber("Target RPM", targetShooterRPM);
+    SmartDashboard.putNumber("Current RPM", currentShooterRPM);
+    SmartDashboard.putNumber("Shooter Timer", shooterTimer.get());
+    
+    SmartDashboard.putNumber("Auton Angle", angle);
+    SmartDashboard.putNumber("Auton Speed", speed);
+    SmartDashboard.putNumber("Auton Rotate", rotate);
+    SmartDashboard.putNumber("Auton Step", step);
   }
 
   /**
