@@ -17,5 +17,6 @@ public final class Constants {
     public static final double DEFAULT_SHOOTER_SPEED = .65; //percent
     public static final double ARM_SPEED_UP = -.4;
     public static final double ARM_SPEED_DOWN = .1;
+    public static final double JOYSTICK_DEADZONE = 0.75;
     // add more constants as needed
 }
