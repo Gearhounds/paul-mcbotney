@@ -493,7 +493,7 @@ public class Robot extends TimedRobot {
     if (hasNote && shootControl) {
       // we are loaded and trying to shoot
       shooterTimer.start();
-      if (currentShooterRPM >= targetShooterRPM || shooterTimer.hasElapsed(Constants.SHOOT_TIMEOUT)) {
+      if ((autoAimEnabled && currentShooterRPM >= targetShooterRPM) || shooterTimer.hasElapsed(Constants.SHOOT_TIMEOUT)) {
         shouldRunIntake = true;
       }
     } else if (hasNote) {
