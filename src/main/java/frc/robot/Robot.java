@@ -5,6 +5,11 @@
 package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 
+import com.ctre.phoenix.led.CANdle;
+import com.ctre.phoenix.led.CANdleConfiguration;
+import com.ctre.phoenix.led.ColorFlowAnimation;
+import com.ctre.phoenix.led.CANdle.LEDStripType;
+import com.ctre.phoenix.led.CANdle.VBatOutputMode;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -178,6 +183,11 @@ public class Robot extends TimedRobot {
   private double speed;
   private double step;
   private double rotate = 0;
+
+  // Lighting
+
+  CANdle lights = new CANdle(0);
+  CANdleConfiguration lightConfig = new CANdleConfiguration();
   
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -194,6 +204,30 @@ public class Robot extends TimedRobot {
     slot0Configs.kI = 0;
     slot0Configs.kD = 0.1;
     shooterArm.getConfigurator().apply(slot0Configs);
+
+    // light configuration
+
+    lightConfig.stripType = LEDStripType.GRB;
+    lightConfig.statusLedOffWhenActive = true;
+    lightConfig.disableWhenLOS = true;
+    lightConfig.vBatOutputMode = VBatOutputMode.Modulated;
+    lightConfig.v5Enabled = true;
+    lights.configAllSettings(lightConfig);
+
+    // {r, g, b, white, startingIndex, numLights}
+    int[][] lightSections = {
+      {255, 0, 0, 0, 8, 75},
+      {255, 240, 220, 0, 83, 75},
+      {0, 0, 255, 0, 258, 75}
+    };
+
+    ColorFlowAnimation animation = new ColorFlowAnimation(4, 17, 18, 0, .5, 75, ColorFlowAnimation.Direction.Forward, 233);
+    for (int[] section : lightSections) {
+      lights.setLEDs(section[0], section[1], section[2], section[3], section[4], section[5]);
+    }
+
+    lights.animate(animation);
+    
     
     isRed = fmsTable.getEntry("IsRedAlliance").getBoolean(true);
     speakerId = isRed ? Constants.RED_SPEAKER_ID : Constants.BLUE_SPEAKER_ID;
