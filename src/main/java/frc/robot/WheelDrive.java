@@ -19,6 +19,7 @@ import com.ctre.phoenix.sensors.CANCoder;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import com.revrobotics.SparkPIDController;
 // import edu.wpi.first.wpilibj.AnalogInput;
@@ -172,7 +173,7 @@ public class WheelDrive {
         //   return Bngle;
             setAngle -= 180;
             reverse = !reverse;
-            speed *= -1;
+            this.speedMotor.setInverted(reverse);
         }
 
         if (reverse){
@@ -198,8 +199,12 @@ public class WheelDrive {
         
         // if(!MathHelp.isEqualApprox(currentAngle, setAngle, .1)){
         //     speed = 0;
-        // }
-        this.speedMotor.set(speed);
+        // }   
+
+        double scalar = MathHelp.map(Math.abs(MathHelp.differenceBetweenAngles(currentAngle, setAngle)), 0, 90, 1, 0);
+        MathUtil.clamp(scalar, 0, 1);
+
+        this.speedMotor.set(speed * scalar);
     }
 
 }
