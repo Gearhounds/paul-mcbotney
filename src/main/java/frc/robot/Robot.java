@@ -54,13 +54,12 @@ public class Robot extends TimedRobot {
   private boolean robotCentricControl;
 
   private boolean toggleInputControl;
+  private boolean reverseInputControl;
   private boolean shootControl;
   private boolean pistonForwardControl;
   private boolean pistonBackwardControl;
   private boolean toggleAutoAimControl;
-  private boolean raiseClawsControl;
   
-  private int operatorDPad;
   private boolean raiseShooterControl;
   private boolean lowerShooterControl;
   
@@ -75,11 +74,14 @@ public class Robot extends TimedRobot {
     }
 
     toggleInputControl = m_opperateController.getAButtonPressed();
+    toggleAutoAimControl = m_opperateController.getStartButtonPressed();
 
     pistonBackwardControl = m_opperateController.getLeftBumperPressed();
     pistonForwardControl = m_opperateController.getRightBumperPressed();
 
     shootControl = m_opperateController.getYButton();
+
+    // Swerve Controls
 
     strafeControllerVal = JOYSTICK_CONTROL ? 
       Math.abs(driverJoystick.getX()) > .075 ? 0 : driverJoystick.getX() : 
@@ -94,6 +96,11 @@ public class Robot extends TimedRobot {
       m_driverController.getRightX() * swerveSpinSpeedModifier;
 
     robotCentricControl = JOYSTICK_CONTROL ? driverJoystick.getRawButton(2) : m_driverController.getLeftBumper();
+
+    raiseShooterControl = m_opperateController.getPOV() == Constants.DPAD_UP;
+    lowerShooterControl = m_opperateController.getPOV() == Constants.DPAD_DOWN;
+
+    reverseInputControl = m_opperateController.getPOV() == Constants.DPAD_RIGHT;
   }
 
   // Sensors
@@ -507,13 +514,12 @@ public class Robot extends TimedRobot {
       shooterSetSpeed = 0;
     }
     
-    if (m_opperateController.getPOV() == 90) {
+    if (reverseInputControl) {
       // override to backdrive intake
       intakeSpeed = 1;
     } else {
       intakeSpeed = shouldRunIntake ? -1 : 0;
     }
-    
     
     if (pistonForwardControl) {
       pistonValue = Value.kForward;
@@ -522,24 +528,16 @@ public class Robot extends TimedRobot {
     } else {
       pistonValue = Value.kOff;
     }
-    climbPiston.set(pistonValue);
-    
-    
 
     armSpeed = 0;
-    if (m_opperateController.getPOV() == 0) {
+    if (lowerShooterControl) {
       armSpeed = -.4;
-    } else if (m_opperateController.getPOV() == 180) {
+    } else if (raiseShooterControl) {
       armSpeed = .1;
     }
-    else if (m_opperateController.getStartButtonPressed()) {
+    else if (toggleAutoAimControl) {
       autoAimEnabled = !autoAimEnabled;
     }
-
-    
-
-    
-    intake.set(intakeSpeed);
     
     if (!autoAimEnabled) {
       shooterArm.set(armSpeed);
@@ -547,6 +545,8 @@ public class Robot extends TimedRobot {
       shooterArm.setControl(m_request.withPosition(shooterArmPosition));
     }
     
+    climbPiston.set(pistonValue);
+    intake.set(intakeSpeed);
     shooterSetSpeed *= -1;
     rightShooter.set(shooterSetSpeed);
     leftShooter.set(-shooterSetSpeed);

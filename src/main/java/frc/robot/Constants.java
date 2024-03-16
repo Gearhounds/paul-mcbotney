@@ -14,6 +14,10 @@ public final class Constants {
 
     public static final int TEAM_NUMBER = 5674;
     public static final double SHOOT_TIMEOUT = 2; // sec
+    public static final int DPAD_UP = 0;
+    public static final int DPAD_RIGHT = 90;
+    public static final int DPAD_DOWN = 180;
+    public static final int DPAD_LEFT = 270;
 
     // add more constants as needed
 }
