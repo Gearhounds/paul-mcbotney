@@ -31,94 +31,38 @@ public class Swervedrive {
 
   double oldAngle;
 
+  public double calcJoystickAngle(double lX, double lY) {
+    double angle = Math.atan2(lX, lY); // radians
+    return angle * 180 / Math.PI;
+  }
+
   public void drive(double lX, double lY, double rX, boolean isRobotCentric) {
       double speed = Math.sqrt((lX*lX) + (lY*lY));
-
       double yaw = gyro.getYaw();
-
-      
-      
-      // double angle = -Math.atan2(lY, lX); //lX/1
-      double angle = -Math.atan(lX);
-  
-      angle *= 100;
-
-
-      //angle += yaw;
-  
-      if((lX == 0 && lY == 0) && oldAngle != 0){
+      double angle = calcJoystickAngle(lX, lY);
+      SmartDashboard.putNumber("Joystick Angle", angle);
+      if ((lY == 0 && lX == 0) && oldAngle != 0) {
         angle = oldAngle;
       }
-      // else{
-      //   angle = 0;
-      // }
+      oldAngle = angle;
+      // speed *= 0.5;
 
-      
-      SmartDashboard.putNumber("Raw angle", angle);
-      
-      if (lX>=0 && lY>=0){ //1
-        angle = 90 - angle - 90;
+      SmartDashboard.putNumber("unmodified yaw", yaw);
+      yaw = isRobotCentric ? yaw * 0: yaw;
+      SmartDashboard.putNumber("modified yaw", yaw);
+      SmartDashboard.putBoolean("isRobotCentric", isRobotCentric);
+      if(rX == 0){
+          frontLeft.SetDirection(angle-yaw, -speed);
+          frontRight.SetDirection(angle-yaw, speed);
+          backLeft.SetDirection(angle-yaw, speed);
+          backRight.SetDirection(angle-yaw, speed);
+      } else if (speed == 0){
+        // Opposite diagonal axle distance = 33.2 inches
+        frontLeft.SetDirection(42.5, -rX); //42.5 degrees
+        frontRight.SetDirection(137.5, rX);  // 137.5 degrees
+        backLeft.SetDirection(317.5, rX);  // 317.5 degrees
+        backRight.SetDirection(222.5, rX); // 222.5 degrees
       }
-      if(lX>0 && lY<0){//2
-        angle = angle + 180;
-      }
-      if(lX<0 && lY>0){//4
-        angle = 90-angle + 270;
-      }
-      if(lX<0 && lY<0){//3
-        angle = angle + 180;
-      }
-      if(lY < 0 && angle == 0){
-        angle = 180;
-      }
-      if(lY == 0 && lX < 0) {
-        angle = 270;
-      }
-      if(lY == 0 && lX > 0) {
-        angle = 90;
-      }
-
-        // if(speed < .1){
-        //     speed = 0;
-        // }
-
-        oldAngle = angle;
-
-        angle = Math.abs(angle);
-
-        // double robotCentric = 1;
-        // double robotCentric = !m_driverController.getRawButton(2) ? 1 : 0;
-
-        // if (m_driverController.getRawButton(2))
-        // {
-        //   robotCentric = 0;
-        // }
-        // else if (!m_driverController.getRawButton(2))
-        // {
-        //   robotCentric = 1;
-        // }
-
-        // angle = Math.sqrt(angle*angle);
-        // angle *= 2;
-        // angle = 0;
-        speed *=0.5;
-
-        SmartDashboard.putNumber("unmodified yaw", yaw);
-        yaw = isRobotCentric ? yaw * 0: yaw;
-        SmartDashboard.putNumber("modified yaw", yaw);
-        SmartDashboard.putBoolean("isRobotCentric", isRobotCentric);
-        if(rX == 0){
-            frontLeft.SetDirection(angle-yaw, -speed);
-            frontRight.SetDirection(angle-yaw, speed);
-            backLeft.SetDirection(angle-yaw, speed);
-            backRight.SetDirection(angle-yaw, speed);
-        } else if (speed == 0){
-          // Opposite diagonal axle distance = 33.2 inches
-          frontLeft.SetDirection(42.5, -rX); //42.5 degrees
-          frontRight.SetDirection(137.5, rX);  // 137.5 degrees
-          backLeft.SetDirection(317.5, rX);  // 317.5 degrees
-          backRight.SetDirection(222.5, rX); // 222.5 degrees
-        }
         // else{
         //   frontLeft.turnAndDrive(angle-yaw, -speed, -rX, 315);
         //   frontRight.turnAndDrive(angle-yaw, speed, rX, 45);
