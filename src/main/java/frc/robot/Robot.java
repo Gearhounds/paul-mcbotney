@@ -100,7 +100,7 @@ public class Robot extends TimedRobot {
       Math.abs(driverJoystick2.getX()) < Constants.JOYSTICK_DEADZONE ? 0 : (-driverJoystick2.getX() * .5) * swerveSpinSpeedModifier :
       m_driverController.getRightX() * swerveSpinSpeedModifier;
 
-    robotCentricControl = JOYSTICK_CONTROL ? driverJoystick.getRawButton(2) : m_driverController.getLeftBumper();
+    robotCentricControl = JOYSTICK_CONTROL ? driverJoystick.getRawButton(3) : m_driverController.getLeftBumper();
 
     raiseShooterControl = m_opperateController.getPOV() == Constants.DPAD_UP;
     lowerShooterControl = m_opperateController.getPOV() == Constants.DPAD_DOWN;
@@ -536,7 +536,7 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     final PositionVoltage m_request = new PositionVoltage(0).withSlot(0);
     updateControlValues();
-    
+
     if (detectedAprilTagId == speakerId) {
       if (limelightY != 0) {
         shooterSpeed = MathHelp.map(limelightY, -2, 30, .75, .4);
