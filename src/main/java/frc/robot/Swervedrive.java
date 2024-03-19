@@ -101,7 +101,7 @@ public class Swervedrive {
         // angle = Math.sqrt(angle*angle);
         // angle *= 2;
         // angle = 0;
-        // speed *=0.25;
+        speed *=0.5;
 
         SmartDashboard.putNumber("unmodified yaw", yaw);
         yaw = isRobotCentric ? yaw * 0: yaw;
