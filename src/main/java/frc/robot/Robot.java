@@ -20,7 +20,6 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
-import edu.wpi.first.wpilibj.motorcontrol.VictorSP;
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 import edu.wpi.first.wpilibj.Timer;
@@ -95,7 +94,7 @@ public class Robot extends TimedRobot {
       Math.abs(driverJoystick2.getX()) < Constants.JOYSTICK_DEADZONE ? 0 : (-driverJoystick2.getX() * .5) * swerveSpinSpeedModifier :
       m_driverController.getRightX() * swerveSpinSpeedModifier;
 
-    robotCentricControl = JOYSTICK_CONTROL ? driverJoystick.getRawButton(2) : m_driverController.getLeftBumper();
+    robotCentricControl = JOYSTICK_CONTROL ? driverJoystick.getRawButton(3) : m_driverController.getLeftBumper();
 
     raiseShooterControl = m_opperateController.getPOV() == Constants.DPAD_UP;
     lowerShooterControl = m_opperateController.getPOV() == Constants.DPAD_DOWN;
@@ -173,11 +172,11 @@ public class Robot extends TimedRobot {
 
   // Auton running values 
   
-  private boolean isShooting = false;
-  private double angle;
-  private double speed;
-  private double step;
-  private double rotate = 0;
+  private boolean autonIsShooting = false;
+  private double autonStrafeSpeed;
+  private double autonDriveSpeed;
+  private double autonStep;
+  private double autonRotationVal = 0;
   
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -200,7 +199,7 @@ public class Robot extends TimedRobot {
 
     autonChooser.setDefaultOption("2 Note", twoNoteKey);
     autonChooser.addOption("4 Note Blue", threeNoteBlueKey);
-    autonChooser.addOption("4 Note Red", threeNoteRedKey);
+    autonChooser.addOption("4 Note Red", threeNoteRedKey); // TODO this doesn't do anything
     autonChooser.addOption("Backwards", crossLineKey);
     SmartDashboard.putData("Auto choices", autonChooser);
   }
@@ -240,10 +239,10 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Current RPM", currentShooterRPM);
     SmartDashboard.putNumber("Shooter Timer", shooterTimer.get());
     
-    SmartDashboard.putNumber("Auton Angle", angle);
-    SmartDashboard.putNumber("Auton Speed", speed);
-    SmartDashboard.putNumber("Auton Rotate", rotate);
-    SmartDashboard.putNumber("Auton Step", step);
+    SmartDashboard.putNumber("Auton Angle", autonStrafeSpeed);
+    SmartDashboard.putNumber("Auton Speed", autonDriveSpeed);
+    SmartDashboard.putNumber("Auton Rotate", autonRotationVal);
+    SmartDashboard.putNumber("Auton Step", autonStep);
   }
 
   /**
@@ -261,12 +260,10 @@ public class Robot extends TimedRobot {
     m_autoSelected = autonChooser.getSelected();
     System.out.println("Running Auton: " + m_autoSelected);
     
-    angle = 0;
-    step = 0;
+    autonStrafeSpeed = 0;
+    autonStep = 0;
     autonMasterTimer.reset();
     autonMasterTimer.start();
-    
-    speakerId = isRed ? 4 : 7;
   }
 
   /** This function is called periodically during autonomous. */
@@ -274,18 +271,17 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {
     final PositionVoltage m_request = new PositionVoltage(0).withSlot(0);
     currentShooterRPM = leftShooter.getEncoder().getVelocity(); // TODO this is negative here but not in tele
+    
     intakeSpeed = 0;
-    speed = 0;
+    autonDriveSpeed = 0;
+    autonRotationVal = 0;
     // negative rotate clockwise positive clockwise
-    rotate = 0;
-
 
     if (detectedAprilTagId == speakerId) {
-      shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -28);
-      targetShooterRPM = MathHelp.map(shooterSpeed, .4, .75, -2600, -4700);
-      
       if (limelightY != 0) {
-        shooterSpeed = MathHelp.map(limelightY, -2, 30, .75, .4);
+        shooterSpeed = MathHelp.map(limelightY, -2, 30, .75, .4) * .9;
+        targetShooterRPM = MathHelp.map(shooterSpeed, .4, .75, 2600, 4700);
+        shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -30);
       }
 
       shooterArmPosition = MathUtil.clamp(shooterArmPosition, -28, 0);
@@ -293,164 +289,170 @@ public class Robot extends TimedRobot {
       targetShooterRPM = MathUtil.clamp(targetShooterRPM, -4700, -2600);
     }
 
+    // TODO: if we dont get limelight data we should hard code a setpoint
+
+    /*
+     * Our goal with refactoring the autons is to make a solid cross the line, and a mirrorable two note auton
+     * As a stretch goal we should try for a three note
+     * 
+     * Two Note: 
+     */
+
     switch (m_autoSelected) {
       case threeNoteBlueKey: 
-        if (step == 0) { // backup
-        angle = 0;
-        speed = .4;
-        if (autonMasterTimer.get() > .125) {
-          autonMasterTimer.reset();
-          step++;
-        }
-        } else if (step == 1) {
-          isShooting = true;
+        if (autonStep == 0) { // backup
+          autonStrafeSpeed = 0;
+          autonDriveSpeed = .4;
+          if (autonMasterTimer.get() > .125) {
+            autonMasterTimer.reset();
+            autonStep++;
+          }
+        } else if (autonStep == 1) {
+          autonIsShooting = true;
           if (autonMasterTimer.get() > 1.75) {
             autonMasterTimer.reset();
-            isShooting = false;
-            step++;  
+            autonIsShooting = false;
+            autonStep++;  
           }
-        } else if (step == 2) {
-          angle = 0;
-          speed = .4;
-          if (!shouldRunIntake)
-          {
+        } else if (autonStep == 2) {
+          autonStrafeSpeed = 0;
+          autonDriveSpeed = .4;
+          if (!shouldRunIntake) {
             autonMasterTimer.reset();
-            step++;
+            autonStep++;
           }
           shouldRunIntake = true;
-        } else if (step == 3) {
-          isShooting = true;
+        } else if (autonStep == 3) {
+          autonIsShooting = true;
           if (autonMasterTimer.get() > 1.6) {
             autonMasterTimer.reset();
-            isShooting = false;
-            step++;  
+            autonIsShooting = false;
+            autonStep++;  
           }
-        } else if (step == 4) {
-          angle = 315;
+        } else if (autonStep == 4) {
+          autonStrafeSpeed = 315;
           if (autonMasterTimer.get() > .25) {
             autonMasterTimer.reset();
-            step++;
+            autonStep++;
           }
-        } else if (step == 5) {
-          angle = 315;
-          speed = .75;
-          if (autonMasterTimer.get() > 1.35)
-          {
+        } else if (autonStep == 5) {
+          autonStrafeSpeed = 315;
+          autonDriveSpeed = .75;
+          if (autonMasterTimer.get() > 1.35) {
             autonMasterTimer.reset();
-            step++;
+            autonStep++;
           }
-        } else if (step == 6) {
-          angle = 0;
-          speed = .75;
-          if (autonMasterTimer.get() > .8)
-          {
+        } else if (autonStep == 6) {
+          autonStrafeSpeed = 0;
+          autonDriveSpeed = .75;
+          if (autonMasterTimer.get() > .8) {
             autonMasterTimer.reset();
-            step++;
+            autonStep++;
           }
-        } else if(step == 7) {
-          if (yaw > 0)
-          {
-            rotate = -.1;
-            if (MathHelp.isEqualApprox(yaw, 7 , 1))
-            {
+        } else if (autonStep == 7) {
+          if (yaw > 0) {
+            autonRotationVal = -.1;
+            if (MathHelp.isEqualApprox(yaw, 7 , 1)) {
               autonMasterTimer.reset();
-              step++;
+              autonStep++;
             }
           } else {
-            rotate = .1;
-            if (MathHelp.isEqualApprox(yaw, 5 , 1))
-            {
+            autonRotationVal = .1;
+            if (MathHelp.isEqualApprox(yaw, 5 , 1)) {
               autonMasterTimer.reset();
-              step++;
+              autonStep++;
             }
-        }
-  
-      } else if (step == 8) {
-        angle = 0;
-        speed = .8;
-        if (!shouldRunIntake || autonMasterTimer.get() > .6) {
-          autonMasterTimer.reset();
-          step++;
-        }
-      } else if (step == 9) {
-        angle = 165;
-        speed = .8;
-        if (autonMasterTimer.get() > 2) {
-          autonMasterTimer.reset();
-          step++;
-        }
-      } else if (step == 10) {
-        rotate = -.1;
-          if (MathHelp.isEqualApprox(yaw,  -10, 2)) {
-            autonMasterTimer.reset();
-            step++;
           }
-      } else if (step == 11) { 
-        if (autonMasterTimer.get() > .35) {
+        } else if (autonStep == 8) {
+          autonStrafeSpeed = 0;
+          autonDriveSpeed = .8;
+          if (!shouldRunIntake || autonMasterTimer.get() > .6) {
             autonMasterTimer.reset();
-            step++;
+            autonStep++;
+          }
+        } else if (autonStep == 9) {
+          autonStrafeSpeed = 165;
+          autonDriveSpeed = .8;
+          if (autonMasterTimer.get() > 2) {
+            autonMasterTimer.reset();
+            autonStep++;
+          }
+        } else if (autonStep == 10) {
+          autonRotationVal = -.1;
+            if (MathHelp.isEqualApprox(yaw,  -10, 2)) {
+              autonMasterTimer.reset();
+              autonStep++;
+            }
+        } else if (autonStep == 11) { 
+          if (autonMasterTimer.get() > .35) {
+            autonMasterTimer.reset();
+            autonStep++;
           }
         }  
         break;
       case crossLineKey:
-        if (step == 0) {
-          angle = 0;
-          speed = .6;
-          if(autonMasterTimer.get() > 3) {
+        if (autonStep == 0) {
+          autonStrafeSpeed = 0;
+          autonDriveSpeed = .6;
+          if (autonMasterTimer.get() > 3) {
             autonMasterTimer.reset();
-            step++;
+            autonStep++;
           }
         }
         break;
       case twoNoteKey:
       default:
-        if (step == 0) { // backup
-          angle = 0;
-          speed = .4;
+        if (autonStep == 0) { // backup
+          autonStrafeSpeed = 0;
+          autonDriveSpeed = .4;
           if (autonMasterTimer.get() > .125) {
             autonMasterTimer.reset();
-            step++;
+            autonStep++;
           }
-        } else if (step == 1) { // shoot
-          isShooting = true;
+        } else if (autonStep == 1) { // shoot
+          autonIsShooting = true;
           if (autonMasterTimer.get() > 1.75) {
             autonMasterTimer.reset();
-            isShooting = false;
-            step++;  
+            autonIsShooting = false;
+            autonStep++;  
           }
-        } else if (step == 2) { // backup more
-          angle = 0;
-          speed = .4;
+        } else if (autonStep == 2) { // backup more
+          autonStrafeSpeed = 0;
+          autonDriveSpeed = .4;
           if (!shouldRunIntake) {
             autonMasterTimer.reset();
-            step++;
+            autonStep++;
           }
           shouldRunIntake = true;
-        } else if (step == 3) { // shoot
-          isShooting = true;
+        } else if (autonStep == 3) { // shoot
+          autonIsShooting = true;
           if (autonMasterTimer.get() > 1.6) {
             autonMasterTimer.reset();
-            isShooting = false;
-            step++;  
+            autonIsShooting = false;
+            autonStep++;  
           }
         }
         break;
-    }
+      }
 
-    if (isShooting) { // shooting
+
+    // Set motors based on control values
+
+    if (autonIsShooting) { // shooting
       if (currentShooterRPM < targetShooterRPM || autonMasterTimer.get() > 1.5) {
-          shouldRunIntake = true;
+        shouldRunIntake = true;
       }
     } else { // not shooting
-      if (hasNote) { // sensor reads false when it has a note
+      if (hasNote) {
         shouldRunIntake = false;
       }
     }
 
+    swervedrive.autoDrive(autonStrafeSpeed - yaw, autonDriveSpeed, autonRotationVal); // TODO: Should yaw be subtracted from rotate?
+    
     intakeSpeed = shouldRunIntake ? -1 : 0;
-
-    swervedrive.autoDrive(angle-yaw, speed, rotate);
     intake.set(intakeSpeed);
+
     shooterArm.setControl(m_request.withPosition(shooterArmPosition));
     rightShooter.set(shooterSpeed);
     leftShooter.set(-shooterSpeed);
@@ -476,7 +478,6 @@ public class Robot extends TimedRobot {
         targetShooterRPM = MathHelp.map(shooterSpeed, .4, .75, 2600, 4700);
         shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -30);
       }
-      
 
       shooterArmPosition = MathUtil.clamp(shooterArmPosition, -28, 0);
       shooterSpeed = MathUtil.clamp(shooterSpeed, .4, .74);
