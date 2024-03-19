@@ -200,6 +200,8 @@ public class Robot extends TimedRobot {
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
+   * 
+   * 
    */
   @Override
   public void robotInit() {
@@ -536,11 +538,10 @@ public class Robot extends TimedRobot {
     updateControlValues();
     
     if (detectedAprilTagId == speakerId) {
-      // y = y > 30 ? y : y - 3;
       if (limelightY != 0) {
-        shooterSpeed = MathHelp.map(limelightY, -2, 30, .75, .4) * .9;
+        shooterSpeed = MathHelp.map(limelightY, -2, 30, .75, .4);
         targetShooterRPM = MathHelp.map(shooterSpeed, .4, .75, 2600, 4700);
-        shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -30);
+        shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -26);
       }
       
 
@@ -579,10 +580,6 @@ public class Robot extends TimedRobot {
       // manual toggle
       shouldRunIntake = !shouldRunIntake;
     }
-
-    // TODO should this get moved up to the intake code as well? or possibly be its own y button press?
-    // maybe something like if (buttonPressed && shooterSetSpeed == 0) -> shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
-    // and then set shooterSetSpeed = 0 when we fire the note
     
     if (shootControl) {
       shooterSetSpeed = autoAimEnabled ? shooterSpeed : .65;
