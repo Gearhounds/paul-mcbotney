@@ -37,7 +37,7 @@ public class Swervedrive {
   }
 
   public void drive(double lX, double lY, double rX, boolean isRobotCentric) {
-      double speed = Math.sqrt((lX*lX) + (lY*lY));
+      double speed = Math.hypot(lX, lY);
       double yaw = gyro.getYaw();
       double angle = calcJoystickAngle(lX, lY);
       SmartDashboard.putNumber("Joystick Angle", angle);

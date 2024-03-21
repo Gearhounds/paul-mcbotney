@@ -18,7 +18,7 @@ public final class Constants {
     public static final int DPAD_DOWN = 180;
     public static final int DPAD_LEFT = 270;
 
-    public static final double SHOOT_TIMEOUT = 2; // sec
+    public static final double SHOOT_TIMEOUT = 1; // sec
     public static final double DEFAULT_SHOOTER_SPEED = .65; //percent
     public static final double SHOOTER_SPEED_UP = -.4;
     public static final double SHOOTER_SPEED_DOWN = .1;
