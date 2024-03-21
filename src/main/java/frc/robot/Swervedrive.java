@@ -12,6 +12,8 @@ public class Swervedrive {
   private WheelDrive frontRight;
   private WheelDrive frontLeft;
 
+  double oldAngle;
+
   final XboxController m_driverController = new XboxController(0);
 
   public Swervedrive (WheelDrive backRight, WheelDrive backLeft, WheelDrive frontRight, WheelDrive frontLeft, AHRS gyro){
@@ -29,15 +31,10 @@ public class Swervedrive {
       backRight.SetDirection(315, turnPower);
   }
 
-  double oldAngle;
-
   public void drive(double lX, double lY, double rX, boolean isRobotCentric) {
       double speed = Math.sqrt((lX*lX) + (lY*lY));
-
       double yaw = gyro.getYaw();
 
-      
-      
       // double angle = -Math.atan2(lY, lX); //lX/1
       double angle = -Math.atan(lX);
   
@@ -150,5 +147,13 @@ public class Swervedrive {
       backLeft.SetDirection(315, rotate);
       backRight.SetDirection(225, rotate);
     }
+  }
+
+  public void autoTankDrive(double leftSpeed, double rightSpeed) {
+    frontLeft.SetDirection(0, leftSpeed);
+    backLeft.SetDirection(0, leftSpeed);
+
+    frontRight.SetDirection(0, rightSpeed);
+    backRight.SetDirection(0, rightSpeed);
   }
 }
