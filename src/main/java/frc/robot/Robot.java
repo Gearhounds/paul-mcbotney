@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import com.ctre.phoenix.led.CANdle;
 import com.ctre.phoenix.led.CANdleConfiguration;
 import com.ctre.phoenix.led.ColorFlowAnimation;
+import com.ctre.phoenix.led.RainbowAnimation;
 import com.ctre.phoenix.led.CANdle.LEDStripType;
 import com.ctre.phoenix.led.CANdle.VBatOutputMode;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -193,7 +194,8 @@ public class Robot extends TimedRobot {
   int[][] lightSections = {
     {Constants.COLOR_RED[0], Constants.COLOR_RED[1], Constants.COLOR_RED[2], 0, 8, 55}, // left claw
     {Constants.COLOR_RED[0], Constants.COLOR_RED[1], Constants.COLOR_RED[2], 0, 63, 24}, // left under
-    {Constants.COLOR_RED[0], Constants.COLOR_RED[1], Constants.COLOR_RED[2], 0, 87, 40}, // right under
+    {Constants.COLOR_RED[0], Constants.COLOR_RED[1], Constants.COLOR_RED[2], 0, 87, 16}, // back under
+    {Constants.COLOR_RED[0], Constants.COLOR_RED[1], Constants.COLOR_RED[2], 0, 103, 24}, // right under
     {Constants.COLOR_RED[0], Constants.COLOR_RED[1], Constants.COLOR_RED[2], 0, 127, 55} // right claw
   };
   
@@ -223,16 +225,12 @@ public class Robot extends TimedRobot {
     lightConfig.vBatOutputMode = VBatOutputMode.Modulated;
     lightConfig.v5Enabled = true;
     lights.configAllSettings(lightConfig);
-
-    ColorFlowAnimation animation = new ColorFlowAnimation(4, 17, 18, 0, .5, 75, ColorFlowAnimation.Direction.Forward, 233);
-    for (int[] section : lightSections) {
-      lights.setLEDs(section[0], section[1], section[2], section[3], section[4], section[5]);
-    }
-    lights.animate(animation);
-    
     
     isRed = fmsTable.getEntry("IsRedAlliance").getBoolean(true);
     speakerId = isRed ? Constants.RED_SPEAKER_ID : Constants.BLUE_SPEAKER_ID;
+
+    RainbowAnimation animation = new RainbowAnimation(1, .5, 64, false, 63);
+    lights.animate(animation);
 
     autonChooser.setDefaultOption("2 Note", twoNoteKey);
     autonChooser.addOption("4 Note Blue", threeNoteBlueKey);
@@ -244,8 +242,9 @@ public class Robot extends TimedRobot {
   /*
    * section 0 = left claw
    * section 1 = left under
-   * section 2 = right under
-   * section 3 = right claw
+   * section 2 = center under
+   * section 3 = right under
+   * section 4 = right claw
    */
   public void updateLightSection(int section, int[] color) {
     lightSections[section][0] = color[0];
@@ -274,21 +273,17 @@ public class Robot extends TimedRobot {
 
     if (hasNote) {
       updateLightSection(0, Constants.COLOR_GREEN);
-      updateLightSection(3, Constants.COLOR_GREEN);
+      updateLightSection(4, Constants.COLOR_GREEN);
     } else if (shouldRunIntake) {
       updateLightSection(0, Constants.COLOR_PURPLE);
-      updateLightSection(3, Constants.COLOR_PURPLE);
+      updateLightSection(4, Constants.COLOR_PURPLE);
     } else {
       updateLightSection(0, Constants.COLOR_RED);
-      updateLightSection(3, Constants.COLOR_RED);
+      updateLightSection(4, Constants.COLOR_RED);
     }
 
-    updateLightSection(1, Constants.COLOR_PURPLE);
-    updateLightSection(2, Constants.COLOR_PURPLE);
-
-    for (int[] section : lightSections) {
-      lights.setLEDs(section[0], section[1], section[2], section[3], section[4], section[5]);
-    }
+    lights.setLEDs(lightSections[0][0], lightSections[0][1], lightSections[0][2], lightSections[0][3], lightSections[0][4], lightSections[0][5]);
+    lights.setLEDs(lightSections[4][0], lightSections[4][1], lightSections[4][2], lightSections[4][3], lightSections[4][4], lightSections[4][5]);
     
     SmartDashboard.putNumber("Yaw", yaw);
 
@@ -544,7 +539,6 @@ public class Robot extends TimedRobot {
         shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -26);
       }
       
-
       shooterArmPosition = MathUtil.clamp(shooterArmPosition, -28, 0);
       shooterSpeed = MathUtil.clamp(shooterSpeed, .4, .74);
       targetShooterRPM = MathUtil.clamp(targetShooterRPM, 2600, 4700);
