@@ -184,7 +184,7 @@ public class Robot extends TimedRobot {
   private double angle;
   private double speed;
   private double step;
-  private double rotate = 0;
+  private double turnSpeed = 0;
 
   // Lighting
 
@@ -237,6 +237,7 @@ public class Robot extends TimedRobot {
     autonChooser.addOption("4 Note Blue", threeNoteBlueKey);
     autonChooser.addOption("4 Note Red", threeNoteRedKey);
     autonChooser.addOption("Backwards", crossLineKey);
+    autonChooser.addOption("Will 2Note", "Will 2Note");
     SmartDashboard.putData("Auto choices", autonChooser);
   }
 
@@ -306,7 +307,7 @@ public class Robot extends TimedRobot {
     
     SmartDashboard.putNumber("Auton Angle", angle);
     SmartDashboard.putNumber("Auton Speed", speed);
-    SmartDashboard.putNumber("Auton Rotate", rotate);
+    SmartDashboard.putNumber("Auton Rotate", turnSpeed);
     SmartDashboard.putNumber("Auton Step", step);
   }
 
@@ -328,6 +329,8 @@ public class Robot extends TimedRobot {
     angle = 0;
     speed = 0;
     step = 0;
+    isShooting = false;
+    shouldRunIntake = false;
     
     autonMasterTimer.reset();
     autonMasterTimer.start();
@@ -341,8 +344,7 @@ public class Robot extends TimedRobot {
     intakeSpeed = 0;
     speed = 0;
     angle = 0;
-    // negative rotate clockwise positive clockwise
-    rotate = 0;
+    turnSpeed = 0;
 
 
     if (detectedAprilTagId == speakerIds[0] || detectedAprilTagId == speakerIds[1]) {
@@ -359,6 +361,7 @@ public class Robot extends TimedRobot {
     } else {
       shooterArmPosition = 0; // TODO find dummy values
       targetShooterRPM = 0;
+      shooterSpeed = .65;
     }
 
     switch (m_autoSelected) {
@@ -418,14 +421,14 @@ public class Robot extends TimedRobot {
         } else if(step == 7) {
           if (yaw > 0)
           {
-            rotate = -.1;
+            turnSpeed = -.1;
             if (MathHelp.isEqualApprox(yaw, 7 , 1))
             {
               autonMasterTimer.reset();
               step++;
             }
           } else {
-            rotate = .1;
+            turnSpeed = .1;
             if (MathHelp.isEqualApprox(yaw, 5 , 1))
             {
               autonMasterTimer.reset();
@@ -448,7 +451,7 @@ public class Robot extends TimedRobot {
           step++;
         }
       } else if (step == 10) {
-        rotate = -.1;
+        turnSpeed = -.1;
           if (MathHelp.isEqualApprox(yaw,  -10, 2)) {
             autonMasterTimer.reset();
             step++;
@@ -504,53 +507,59 @@ public class Robot extends TimedRobot {
         break;
       case "Will 2Note":
         if (step == 0) {
+          angle = 0;
           speed = 0.25;
+          turnSpeed = 0;
           if (autonMasterTimer.get() > 1.5) { // back up
             autonMasterTimer.reset();
             step++;
           }
         } else if (step == 1) { // turn
           speed = 0;
-          angle = 45;
-          if (autonMasterTimer.get() > 2) {
+          angle = 40;
+          turnSpeed = -.25;
+          if (autonMasterTimer.get() > 3) {
             autonMasterTimer.reset();
             step++;
           }
         } else if (step == 2) { // shoot
-          speed = 0;
-          angle = 0;
           isShooting = true;
           if (autonMasterTimer.get() > 2) {
             autonMasterTimer.reset();
+            isShooting = false;
             step++;
           }
         } else if (step == 3) { // turn back
           speed = 0;
           angle = 0;
-          if (autonMasterTimer.get() > 2) {
+          turnSpeed = .25;
+          if (autonMasterTimer.get() > 3) {
             autonMasterTimer.reset();
             step++;
           }
         } else if (step == 4) { // drive back
           speed = 0.25;
           angle = 0;
+          turnSpeed = 0;
           if (autonMasterTimer.get() > 2) {
             autonMasterTimer.reset();
             step++;
           }
         } else if (step == 5) { // turn
           speed = 0;
-          angle = 45;
+          angle = 35;
+          turnSpeed = .25;
           if (autonMasterTimer.get() > 2) {
             autonMasterTimer.reset();
             step++;
           }
-        } else if (step == 7) { // shoot
+        } else if (step == 6) { // shoot
           speed = 0;
           angle = 0;
           isShooting = true;
           if (autonMasterTimer.get() > 2) {
             autonMasterTimer.reset();
+            isShooting = false;
             step++;
           }
         }
@@ -558,7 +567,7 @@ public class Robot extends TimedRobot {
     }
 
     if (isShooting) {
-      if (currentShooterRPM < targetShooterRPM || autonMasterTimer.get() > Constants.SHOOT_TIMEOUT) {
+      if (autonMasterTimer.get() > Constants.SHOOT_TIMEOUT) {
           shouldRunIntake = true;
       }
     } else {
@@ -567,17 +576,17 @@ public class Robot extends TimedRobot {
       }
     }
 
-    if (angle != 0 && speed == 0) {
-      swervedrive.autoTurn(angle);
-    } else if (speed != 0) {
+    if (turnSpeed != 0) {
+      swervedrive.autoTurn(angle, turnSpeed);
+    } else {
       swervedrive.autoTankDrive(speed, angle);
     }
     
     intakeSpeed = shouldRunIntake ? -1 : 0;
     intake.set(intakeSpeed);
     shooterArm.setControl(m_request.withPosition(shooterArmPosition));
-    rightShooter.set(shooterSpeed);
-    leftShooter.set(-shooterSpeed);
+    rightShooter.set(-shooterSpeed);
+    leftShooter.set(shooterSpeed);
   }
 
   /** This function is called once when teleop is enabled. */

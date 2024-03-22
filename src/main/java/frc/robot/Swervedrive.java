@@ -78,8 +78,7 @@ public class Swervedrive {
   public void autoDrive(double angle, double speed, double rotate) {
     oldAngle = angle;
     angle = Math.abs(angle);
-
-
+    
     if (rotate == 0) {
       frontLeft.SetDirection(angle, -speed);
       frontRight.SetDirection(angle, speed);
@@ -95,10 +94,14 @@ public class Swervedrive {
 
   private String getTurnDirection(double setAngle) {
     double yaw = gyro.getYaw();
+    setAngle *= -1;
     if (MathHelp.isEqualApprox(yaw, setAngle, 3)) {
       return "straight";
-  }
-    return 360 - setAngle + yaw < setAngle - yaw ? "counter-clockwise" : "clockwise";
+    }
+    setAngle = MathHelp.pickCloserAngleDeg(yaw, setAngle - 180, setAngle);
+    
+    return setAngle > 0 ? "counter-clockwise" : "clockwise";
+
   }
 
   public void autoTankDrive(double setSpeed, double setAngle) {
@@ -114,8 +117,8 @@ public class Swervedrive {
         break;
       case "counter-clockwise":
         System.out.println("OPTIMIZATION: turning counter-clockwise towards " + setAngle);
-        motorSpeeds[0] = 0.25;
-        motorSpeeds[1] = -0.25;
+        motorSpeeds[0] = -0.25;
+        motorSpeeds[1] = 0.25;
         break;
       case "straight":
         System.out.println("driving straight towards " + setAngle);
@@ -130,12 +133,12 @@ public class Swervedrive {
     backRight.SetDirection(0, motorSpeeds[1]);
   }
 
-  public void autoTurn(double setAngle) {
+  public void autoTurn(double setAngle, double turnSpeed) {
     double yaw = gyro.getYaw();
     if (MathHelp.isEqualApprox(yaw, setAngle, setAngle)) {
       return;
     }
-    double speed = 360 - setAngle + yaw < setAngle - yaw ? 0.5 : -0.5;
+    double speed = 360 - setAngle + yaw < setAngle - yaw ? 0.25 : -0.25;
     frontLeft.SetDirection(45, speed);
     frontRight.SetDirection(135, speed);
     backLeft.SetDirection(225, speed);

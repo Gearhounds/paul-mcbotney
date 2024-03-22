@@ -49,10 +49,9 @@ public class MathHelp {
         double Ang = Angle * (Math.PI/180);
         double Bng = Bngle * (Math.PI/180);
 
-        if (Math.abs(differenceBetweenAngles(myAng, Bng)) < Math.abs(differenceBetweenAngles(myAng, Ang)))
-        {
+        if (Math.abs(differenceBetweenAngles(myAng, Bng)) < Math.abs(differenceBetweenAngles(myAng, Ang))) {
           return Bngle;
-        }else{
+        } else{
           return Angle;
         }
       
