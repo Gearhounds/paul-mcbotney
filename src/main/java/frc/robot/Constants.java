@@ -27,5 +27,12 @@ public final class Constants {
     public static final int RED_SPEAKER_ID = 4;
     public static final int BLUE_SPEAKER_ID = 7;
     
+    public static final int[] COLOR_OFF = {0, 0, 0};
+    public static final int[] COLOR_PURPLE = {255, 0, 255};
+    public static final int[] COLOR_RED = {255, 0, 0};
+    public static final int[] COLOR_AMBER = {255, 150, 0};
+    public static final int[] COLOR_GREEN = {0, 255, 0};
+    public static final int[] COLOR_BLUE = {0, 0, 255};
+
     // add more constants as needed
 }

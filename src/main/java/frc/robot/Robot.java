@@ -186,8 +186,16 @@ public class Robot extends TimedRobot {
 
   // Lighting
 
-  CANdle lights = new CANdle(0);
+  CANdle lights = new CANdle(10);
   CANdleConfiguration lightConfig = new CANdleConfiguration();
+
+  // {r, g, b, white, startingIndex, numLights}
+  int[][] lightSections = {
+    {Constants.COLOR_RED[0], Constants.COLOR_RED[1], Constants.COLOR_RED[2], 0, 8, 55}, // left claw
+    {Constants.COLOR_RED[0], Constants.COLOR_RED[1], Constants.COLOR_RED[2], 0, 63, 24}, // left under
+    {Constants.COLOR_RED[0], Constants.COLOR_RED[1], Constants.COLOR_RED[2], 0, 87, 40}, // right under
+    {Constants.COLOR_RED[0], Constants.COLOR_RED[1], Constants.COLOR_RED[2], 0, 127, 55} // right claw
+  };
   
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -214,18 +222,10 @@ public class Robot extends TimedRobot {
     lightConfig.v5Enabled = true;
     lights.configAllSettings(lightConfig);
 
-    // {r, g, b, white, startingIndex, numLights}
-    int[][] lightSections = {
-      {255, 0, 0, 0, 8, 75},
-      {255, 240, 220, 0, 83, 75},
-      {0, 0, 255, 0, 258, 75}
-    };
-
     ColorFlowAnimation animation = new ColorFlowAnimation(4, 17, 18, 0, .5, 75, ColorFlowAnimation.Direction.Forward, 233);
     for (int[] section : lightSections) {
       lights.setLEDs(section[0], section[1], section[2], section[3], section[4], section[5]);
     }
-
     lights.animate(animation);
     
     
@@ -237,6 +237,18 @@ public class Robot extends TimedRobot {
     autonChooser.addOption("4 Note Red", threeNoteRedKey);
     autonChooser.addOption("Backwards", crossLineKey);
     SmartDashboard.putData("Auto choices", autonChooser);
+  }
+
+  /*
+   * section 0 = left claw
+   * section 1 = left under
+   * section 2 = right under
+   * section 3 = right claw
+   */
+  public void updateLightSection(int section, int[] color) {
+    lightSections[section][0] = color[0];
+    lightSections[section][1] = color[1];
+    lightSections[section][2] = color[2];
   }
 
   /**
@@ -254,21 +266,41 @@ public class Robot extends TimedRobot {
     isRed = fmsTable.getEntry("IsRedAlliance").getBoolean(true);
     speakerId = isRed ? Constants.RED_SPEAKER_ID : Constants.BLUE_SPEAKER_ID;
 
+    yaw = gyro.getYaw();
+    hasNote = !noteSensor.get();
+    currentShooterRPM = Math.abs(leftShooter.getEncoder().getVelocity());
+
+    if (hasNote) {
+      updateLightSection(0, Constants.COLOR_GREEN);
+      updateLightSection(3, Constants.COLOR_GREEN);
+    } else if (shouldRunIntake) {
+      updateLightSection(0, Constants.COLOR_PURPLE);
+      updateLightSection(3, Constants.COLOR_PURPLE);
+    } else {
+      updateLightSection(0, Constants.COLOR_RED);
+      updateLightSection(3, Constants.COLOR_RED);
+    }
+
+    updateLightSection(1, Constants.COLOR_PURPLE);
+    updateLightSection(2, Constants.COLOR_PURPLE);
+
+    for (int[] section : lightSections) {
+      lights.setLEDs(section[0], section[1], section[2], section[3], section[4], section[5]);
+    }
+    
+    SmartDashboard.putNumber("Yaw", yaw);
+
     SmartDashboard.putNumber("LimelightY", limelightY);
     SmartDashboard.putNumber("Detected April Tag Id", detectedAprilTagId);
     SmartDashboard.putBoolean("isRed", isRed);
     SmartDashboard.putNumber("Selected Speaker ID", speakerId);
 
-    yaw = gyro.getYaw();
-    SmartDashboard.putNumber("Yaw", yaw);
-
-    currentShooterRPM = Math.abs(leftShooter.getEncoder().getVelocity());
     SmartDashboard.putNumber("RPM", currentShooterRPM);
     SmartDashboard.putNumber("Shooter Position", shooterArmPosition);
 
-    hasNote = !noteSensor.get();
-    SmartDashboard.putBoolean("Have Note", hasNote);
 
+    SmartDashboard.putBoolean("Have Note", hasNote);
+    
 
     SmartDashboard.putNumber("Target RPM", targetShooterRPM);
     SmartDashboard.putNumber("Current RPM", currentShooterRPM);
