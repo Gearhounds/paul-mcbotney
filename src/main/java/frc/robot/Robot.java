@@ -185,7 +185,6 @@ public class Robot extends TimedRobot {
   private double speed;
   private double step;
   private double rotate = 0;
-  private double spinSpeed;
 
   // Lighting
 
@@ -327,7 +326,6 @@ public class Robot extends TimedRobot {
     System.out.println("Running Auton: " + m_autoSelected);
     
     angle = 0;
-    spinSpeed = 0;
     speed = 0;
     step = 0;
     
@@ -358,6 +356,9 @@ public class Robot extends TimedRobot {
       shooterArmPosition = MathUtil.clamp(shooterArmPosition, -28, 0);
       shooterSpeed = MathUtil.clamp(shooterSpeed, .4, .75);
       targetShooterRPM = MathUtil.clamp(targetShooterRPM, -4700, -2600);
+    } else {
+      shooterArmPosition = 0; // TODO find dummy values
+      targetShooterRPM = 0;
     }
 
     switch (m_autoSelected) {
@@ -504,33 +505,75 @@ public class Robot extends TimedRobot {
       case "Will 2Note":
         if (step == 0) {
           speed = 0.25;
-          if(autonMasterTimer.get() > 3) {
+          if (autonMasterTimer.get() > 1.5) { // back up
             autonMasterTimer.reset();
             step++;
           }
-        } else if (step == 1) {
-
+        } else if (step == 1) { // turn
+          speed = 0;
+          angle = 45;
+          if (autonMasterTimer.get() > 2) {
+            autonMasterTimer.reset();
+            step++;
+          }
+        } else if (step == 2) { // shoot
+          speed = 0;
+          angle = 0;
+          isShooting = true;
+          if (autonMasterTimer.get() > 2) {
+            autonMasterTimer.reset();
+            step++;
+          }
+        } else if (step == 3) { // turn back
+          speed = 0;
+          angle = 0;
+          if (autonMasterTimer.get() > 2) {
+            autonMasterTimer.reset();
+            step++;
+          }
+        } else if (step == 4) { // drive back
+          speed = 0.25;
+          angle = 0;
+          if (autonMasterTimer.get() > 2) {
+            autonMasterTimer.reset();
+            step++;
+          }
+        } else if (step == 5) { // turn
+          speed = 0;
+          angle = 45;
+          if (autonMasterTimer.get() > 2) {
+            autonMasterTimer.reset();
+            step++;
+          }
+        } else if (step == 7) { // shoot
+          speed = 0;
+          angle = 0;
+          isShooting = true;
+          if (autonMasterTimer.get() > 2) {
+            autonMasterTimer.reset();
+            step++;
+          }
         }
         break;
     }
 
-    if (isShooting) { // shooting
-      if (currentShooterRPM < targetShooterRPM || autonMasterTimer.get() > 1.5) {
+    if (isShooting) {
+      if (currentShooterRPM < targetShooterRPM || autonMasterTimer.get() > Constants.SHOOT_TIMEOUT) {
           shouldRunIntake = true;
       }
-    } else { // not shooting
-      if (hasNote) { // sensor reads false when it has a note
+    } else {
+      if (hasNote) {
         shouldRunIntake = false;
       }
     }
 
-    intakeSpeed = shouldRunIntake ? -1 : 0;
-
-    if (spinSpeed != 0) {
-
+    if (angle != 0 && speed == 0) {
+      swervedrive.autoTurn(angle);
+    } else if (speed != 0) {
+      swervedrive.autoTankDrive(speed, angle);
     }
-
-    swervedrive.autoTankDrive(speed, angle);
+    
+    intakeSpeed = shouldRunIntake ? -1 : 0;
     intake.set(intakeSpeed);
     shooterArm.setControl(m_request.withPosition(shooterArmPosition));
     rightShooter.set(shooterSpeed);
