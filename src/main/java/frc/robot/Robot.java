@@ -185,6 +185,7 @@ public class Robot extends TimedRobot {
   private double speed;
   private double step;
   private double rotate = 0;
+  private double spinSpeed;
 
   // Lighting
 
@@ -326,7 +327,10 @@ public class Robot extends TimedRobot {
     System.out.println("Running Auton: " + m_autoSelected);
     
     angle = 0;
+    spinSpeed = 0;
+    speed = 0;
     step = 0;
+    
     autonMasterTimer.reset();
     autonMasterTimer.start();
   }
@@ -497,6 +501,17 @@ public class Robot extends TimedRobot {
           }
         }
         break;
+      case "Will 2Note":
+        if (step == 0) {
+          speed = 0.25;
+          if(autonMasterTimer.get() > 3) {
+            autonMasterTimer.reset();
+            step++;
+          }
+        } else if (step == 1) {
+
+        }
+        break;
     }
 
     if (isShooting) { // shooting
@@ -510,6 +525,10 @@ public class Robot extends TimedRobot {
     }
 
     intakeSpeed = shouldRunIntake ? -1 : 0;
+
+    if (spinSpeed != 0) {
+
+    }
 
     swervedrive.autoTankDrive(speed, angle);
     intake.set(intakeSpeed);

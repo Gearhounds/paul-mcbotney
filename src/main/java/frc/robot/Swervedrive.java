@@ -94,7 +94,7 @@ public class Swervedrive {
   }
 
   private String getTurnDirection(double setAngle) {
-    double yaw = gyro.getAngle();
+    double yaw = gyro.getYaw();
     if (MathHelp.isEqualApprox(yaw, setAngle, 3)) {
       return "straight";
   }
@@ -128,5 +128,17 @@ public class Swervedrive {
     frontRight.SetDirection(0, motorSpeeds[1]);
     backLeft.SetDirection(0, motorSpeeds[0]);
     backRight.SetDirection(0, motorSpeeds[1]);
+  }
+
+  public void autoTurn(double setAngle) {
+    double yaw = gyro.getYaw();
+    if (MathHelp.isEqualApprox(yaw, setAngle, setAngle)) {
+      return;
+    }
+    double speed = 360 - setAngle + yaw < setAngle - yaw ? 0.5 : -0.5;
+    frontLeft.SetDirection(45, speed);
+    frontRight.SetDirection(135, speed);
+    backLeft.SetDirection(225, speed);
+    backRight.SetDirection(315, speed);
   }
 }
