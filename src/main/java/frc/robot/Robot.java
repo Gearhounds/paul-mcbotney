@@ -26,6 +26,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
+import edu.wpi.first.wpilibj.SerialPort.Port;
 import edu.wpi.first.wpilibj.motorcontrol.VictorSP;
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkLowLevel.MotorType;
@@ -337,6 +338,7 @@ public class Robot extends TimedRobot {
     currentShooterRPM = leftShooter.getEncoder().getVelocity(); // TODO this is negative here but not in tele
     intakeSpeed = 0;
     speed = 0;
+    angle = 0;
     // negative rotate clockwise positive clockwise
     rotate = 0;
 
@@ -455,8 +457,8 @@ public class Robot extends TimedRobot {
         break;
       case crossLineKey:
         if (step == 0) {
+          speed = 0.25;
           angle = 0;
-          speed = .6;
           if(autonMasterTimer.get() > 3) {
             autonMasterTimer.reset();
             step++;
@@ -464,7 +466,6 @@ public class Robot extends TimedRobot {
         }
         break;
       case twoNoteKey:
-      default:
         if (step == 0) { // backup
           angle = 0;
           speed = .4;
@@ -510,7 +511,7 @@ public class Robot extends TimedRobot {
 
     intakeSpeed = shouldRunIntake ? -1 : 0;
 
-    swervedrive.autoDrive(angle-yaw, speed, rotate);
+    swervedrive.autoTankDrive(speed, angle);
     intake.set(intakeSpeed);
     shooterArm.setControl(m_request.withPosition(shooterArmPosition));
     rightShooter.set(shooterSpeed);
