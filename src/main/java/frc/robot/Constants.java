@@ -19,13 +19,13 @@ public final class Constants {
     public static final int DPAD_LEFT = 270;
 
     public static final double SHOOT_TIMEOUT = 1; // sec
-    public static final double DEFAULT_SHOOTER_SPEED = .65; //percent
+    public static final double DEFAULT_SHOOTER_SPEED = .65; // percent
     public static final double SHOOTER_SPEED_UP = -.4;
     public static final double SHOOTER_SPEED_DOWN = .1;
     public static final double JOYSTICK_DEADZONE = 0.05;
 
-    public static final int RED_SPEAKER_ID = 4;
-    public static final int BLUE_SPEAKER_ID = 7;
+    public static final double[] RED_SPEAKER_IDS = {3, 4};
+    public static final double[] BLUE_SPEAKER_IDS = {7, 8};
     
     public static final int[] COLOR_OFF = {0, 0, 0};
     public static final int[] COLOR_PURPLE = {255, 0, 255};

@@ -161,7 +161,7 @@ public class Robot extends TimedRobot {
   public double limelightY;
   public double detectedAprilTagId;
 
-  private double speakerId;
+  private double[] speakerIds;
   
   // Autonomous Mode
   
@@ -227,7 +227,7 @@ public class Robot extends TimedRobot {
     lights.configAllSettings(lightConfig);
     
     isRed = fmsTable.getEntry("IsRedAlliance").getBoolean(true);
-    speakerId = isRed ? Constants.RED_SPEAKER_ID : Constants.BLUE_SPEAKER_ID;
+    speakerIds = isRed ? Constants.RED_SPEAKER_IDS : Constants.BLUE_SPEAKER_IDS;
 
     RainbowAnimation animation = new RainbowAnimation(1, .5, 64, false, 63);
     lights.animate(animation);
@@ -265,7 +265,7 @@ public class Robot extends TimedRobot {
     detectedAprilTagId = limelightData.getEntry("tid").getDouble(-1);
 
     isRed = fmsTable.getEntry("IsRedAlliance").getBoolean(true);
-    speakerId = isRed ? Constants.RED_SPEAKER_ID : Constants.BLUE_SPEAKER_ID;
+    speakerIds = isRed ? Constants.RED_SPEAKER_IDS : Constants.BLUE_SPEAKER_IDS;
 
     yaw = gyro.getYaw();
     hasNote = !noteSensor.get();
@@ -290,7 +290,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("LimelightY", limelightY);
     SmartDashboard.putNumber("Detected April Tag Id", detectedAprilTagId);
     SmartDashboard.putBoolean("isRed", isRed);
-    SmartDashboard.putNumber("Selected Speaker ID", speakerId);
+    SmartDashboard.putNumberArray("Selected Speaker ID", speakerIds);
 
     SmartDashboard.putNumber("RPM", currentShooterRPM);
     SmartDashboard.putNumber("Shooter Position", shooterArmPosition);
@@ -328,8 +328,6 @@ public class Robot extends TimedRobot {
     step = 0;
     autonMasterTimer.reset();
     autonMasterTimer.start();
-    
-    speakerId = isRed ? 4 : 7;
   }
 
   /** This function is called periodically during autonomous. */
@@ -343,7 +341,7 @@ public class Robot extends TimedRobot {
     rotate = 0;
 
 
-    if (detectedAprilTagId == speakerId) {
+    if (detectedAprilTagId == speakerIds[0] || detectedAprilTagId == speakerIds[1]) {
       shooterArmPosition = MathHelp.map(limelightY, -2, 30, -10, -28);
       targetShooterRPM = MathHelp.map(shooterSpeed, .4, .75, -2600, -4700);
       
@@ -532,7 +530,7 @@ public class Robot extends TimedRobot {
     final PositionVoltage m_request = new PositionVoltage(0).withSlot(0);
     updateControlValues();
 
-    if (detectedAprilTagId == speakerId) {
+    if (detectedAprilTagId == speakerIds[0] || detectedAprilTagId == speakerIds[1]) {
       if (limelightY != 0) {
         shooterSpeed = MathHelp.map(limelightY, -2, 30, .75, .4);
         targetShooterRPM = MathHelp.map(shooterSpeed, .4, .75, 2600, 4700);
