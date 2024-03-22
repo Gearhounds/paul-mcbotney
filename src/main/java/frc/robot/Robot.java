@@ -298,10 +298,10 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("RPM", currentShooterRPM);
     SmartDashboard.putNumber("Shooter Position", shooterArmPosition);
 
-
     SmartDashboard.putBoolean("Have Note", hasNote);
+    SmartDashboard.putBoolean("Auto Aim Enabled", autoAimEnabled);
+    SmartDashboard.putBoolean("Should Run Intake", shouldRunIntake);
     
-
     SmartDashboard.putNumber("Target RPM", targetShooterRPM);
     SmartDashboard.putNumber("Current RPM", currentShooterRPM);
     SmartDashboard.putNumber("Shooter Timer", shooterTimer.get());
